@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useContext, createContext } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import React, { useState, useEffect, useContext, createContext, Suspense, lazy } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { 
   Menu, X, ChevronDown, Mail, Phone, MapPin, Linkedin, Github, ExternalLink,
   Download, Code, Database, Smartphone, Server, Award, Briefcase, GraduationCap,
@@ -8,18 +8,29 @@ import {
   Instagram, Twitter, Facebook, Youtube, Zap, Sparkles, Rocket, Target,
   TrendingUp, BarChart3, PieChart, Activity, Clock, BookOpen, FileText,
   Camera, Video, Image, Layers, Palette, Cpu, Cloud, Shield, Lock,
-  Smartphone as Mobile, Tablet, Monitor, Headphones, Coffee, Pizza
+  Smartphone as Mobile, Tablet, Monitor, Headphones, Coffee, Pizza,
+  Send, CheckCircle2, AlertCircle, User, Building, MessageSquare,
+  Copy, Check, Wifi, WifiOff, Loader2, Settings, Bell, Home
 } from 'lucide-react';
+
+// Lazy load components for better performance
+const EnhancedContactForm = lazy(() => import('./contact/EnhancedContactForm'));
+const Gallery = lazy(() => import('./gallery/GalleryComponents'));
+const BlogSection = lazy(() => import('./blog/BlogComponents'));
+const ThreeDScene = lazy(() => import('./3d/ThreeDComponents'));
 
 // Context for theme and language
 const ThemeContext = createContext();
 const LanguageContext = createContext();
+const AnalyticsContext = createContext();
 
-// Theme Provider
+// Theme Provider with system preference detection
 const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') || 'light';
+      const stored = localStorage.getItem('theme');
+      if (stored) return stored;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
     return 'light';
   });
@@ -29,6 +40,15 @@ const ThemeProvider = ({ children }) => {
     setTheme(newTheme);
     localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    
+    // Track theme change
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'theme_change', {
+        event_category: 'user_preference',
+        from_theme: theme,
+        to_theme: newTheme
+      });
+    }
   };
 
   useEffect(() => {
@@ -36,34 +56,116 @@ const ThemeProvider = ({ children }) => {
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, isDark: theme === 'dark' }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-// Language Provider
+// Language Provider with enhanced features
 const LanguageProvider = ({ children }) => {
   const [language, setLanguage] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('language') || 'fr';
+      const stored = localStorage.getItem('language');
+      if (stored) return stored;
+      const browserLang = navigator.language.split('-')[0];
+      return ['fr', 'en'].includes(browserLang) ? browserLang : 'fr';
     }
     return 'fr';
   });
 
   const changeLanguage = (lang) => {
+    const oldLang = language;
     setLanguage(lang);
     localStorage.setItem('language', lang);
+    document.documentElement.lang = lang;
+    
+    // Track language change
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'language_change', {
+        event_category: 'user_preference',
+        from_language: oldLang,
+        to_language: lang
+      });
+    }
   };
 
   return (
-    <LanguageContext.Provider value={{ language, changeLanguage }}>
+    <LanguageContext.Provider value={{ language, changeLanguage, availableLanguages: ['fr', 'en'] }}>
       {children}
     </LanguageContext.Provider>
   );
 };
 
-// Translations
+// Analytics Provider
+const AnalyticsProvider = ({ children }) => {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [installPrompt, setInstallPrompt] = useState(null);
+
+  useEffect(() => {
+    // Online/offline detection
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // PWA install prompt
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    // Initialize analytics
+    if (typeof gtag !== 'undefined') {
+      gtag('config', 'GA_MEASUREMENT_ID', {
+        page_title: document.title,
+        page_location: window.location.href
+      });
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const trackEvent = (eventName, parameters = {}) => {
+    if (typeof gtag !== 'undefined') {
+      gtag('event', eventName, {
+        event_category: parameters.category || 'engagement',
+        event_label: parameters.label || '',
+        value: parameters.value || 0,
+        ...parameters
+      });
+    }
+  };
+
+  const installPWA = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      trackEvent('pwa_install_prompt', { outcome });
+      setInstallPrompt(null);
+    }
+  };
+
+  return (
+    <AnalyticsContext.Provider value={{ 
+      isOnline, 
+      installPrompt, 
+      installPWA, 
+      trackEvent 
+    }}>
+      {children}
+    </AnalyticsContext.Provider>
+  );
+};
+
+// Enhanced translations with more content
 const translations = {
   fr: {
     nav: {
@@ -75,31 +177,96 @@ const translations = {
       blog: 'Blog',
       gallery: 'Galerie',
       education: 'Formation',
-      contact: 'Contact'
+      contact: 'Contact',
+      resume: 'CV'
     },
     hero: {
       title: 'MOMO GODI YVAN',
       subtitle: 'Ingénieur en Génie Logiciel | Développeur Web & Mobile | Expert en Transformation Digitale',
+      description: 'Passionné par l\'innovation technologique au service du développement local camerounais',
       cta1: 'Me Contacter',
       cta2: 'Voir Mes Projets',
+      cta3: 'Télécharger CV',
       location: 'Yaoundé, Cameroun',
-      availability: 'Disponible Mondialement'
+      availability: 'Disponible Mondialement',
+      status: 'En ligne'
     },
     about: {
       title: 'À Propos de Moi',
-      description1: 'Ingénieur en génie logiciel diplômé de l\'IAI Cameroun, parfaitement bilingue (français/anglais), spécialisé en développement web et mobile.',
-      description2: 'Expert en transformation digitale avec une expérience confirmée dans la digitalisation d\'organisations communautaires.',
+      subtitle: 'Innovation • Expertise • Impact',
+      description1: 'Ingénieur en génie logiciel diplômé de l\'IAI Cameroun, parfaitement bilingue (français/anglais), spécialisé en développement web et mobile avec une approche centrée sur l\'innovation et l\'impact social.',
+      description2: 'Expert en transformation digitale avec une expérience confirmée dans la digitalisation d\'organisations communautaires et la formation numérique. Professeur de Karaté Wado Ryu, je conjugue discipline martiale et excellence technologique.',
       years: 'Années d\'Expérience',
       projects: 'Projets Réalisés',
       women: 'Femmes Formées',
       languages: 'Langues Maîtrisées'
+    },
+    skills: {
+      title: 'Compétences Techniques',
+      subtitle: 'Maîtrise complète de l\'écosystème de développement moderne',
+      programming: 'Langages',
+      frameworks: 'Frameworks',
+      databases: 'Bases de Données',
+      tools: 'Outils & DevOps',
+      level: 'Niveau',
+      experience: 'ans d\'expérience'
+    },
+    projects: {
+      title: 'Projets & Réalisations',
+      subtitle: 'Découvrez mes dernières créations et innovations technologiques',
+      viewDetails: 'Voir les détails',
+      viewCode: 'Voir le code',
+      viewDemo: 'Voir la démo',
+      technologies: 'Technologies utilisées',
+      features: 'Fonctionnalités clés',
+      status: 'Statut',
+      progress: 'Progression',
+      noResults: 'Aucun projet trouvé'
+    },
+    blog: {
+      title: 'Blog & Articles',
+      subtitle: 'Mes réflexions sur la technologie, le développement et l\'innovation en Afrique',
+      readMore: 'Lire l\'article',
+      readTime: 'min de lecture',
+      featured: 'À la une',
+      viewAll: 'Voir tous les articles'
     },
     contact: {
       title: 'Contactez-Moi',
       subtitle: 'Prêt à collaborer sur votre prochain projet ? N\'hésitez pas à me contacter !',
       email: 'Envoyer un Email',
       whatsapp: 'WhatsApp',
-      call: 'Appeler'
+      call: 'Appeler',
+      availability: 'Disponibilité',
+      services: 'Services',
+      response: 'Réponse sous 24h',
+      remote: 'Travail à distance possible',
+      newProjects: 'Disponible pour nouveaux projets'
+    },
+    footer: {
+      description: 'Ingénieur en Génie Logiciel passionné par l\'innovation technologique en Afrique.',
+      navigation: 'Navigation',
+      services: 'Services',
+      contact: 'Contact',
+      rights: 'Tous droits réservés.',
+      madeWith: 'Développé avec ❤️ utilisant React.js, Framer Motion & Tailwind CSS'
+    },
+    common: {
+      loading: 'Chargement...',
+      error: 'Une erreur s\'est produite',
+      tryAgain: 'Réessayer',
+      close: 'Fermer',
+      open: 'Ouvrir',
+      menu: 'Menu',
+      search: 'Rechercher...',
+      filter: 'Filtrer',
+      all: 'Tout',
+      install: 'Installer l\'app',
+      share: 'Partager',
+      copy: 'Copier',
+      copied: 'Copié !',
+      online: 'En ligne',
+      offline: 'Hors ligne'
     }
   },
   en: {
@@ -112,31 +279,96 @@ const translations = {
       blog: 'Blog',
       gallery: 'Gallery',
       education: 'Education',
-      contact: 'Contact'
+      contact: 'Contact',
+      resume: 'Resume'
     },
     hero: {
       title: 'MOMO GODI YVAN',
       subtitle: 'Software Engineer | Web & Mobile Developer | Digital Transformation Expert',
+      description: 'Passionate about technological innovation serving local Cameroonian development',
       cta1: 'Contact Me',
       cta2: 'View My Projects',
+      cta3: 'Download Resume',
       location: 'Yaoundé, Cameroon',
-      availability: 'Available Worldwide'
+      availability: 'Available Worldwide',
+      status: 'Online'
     },
     about: {
       title: 'About Me',
-      description1: 'Software engineer graduated from IAI Cameroon, perfectly bilingual (French/English), specialized in web and mobile development.',
-      description2: 'Digital transformation expert with proven experience in digitalizing community organizations.',
+      subtitle: 'Innovation • Expertise • Impact',
+      description1: 'Software engineer graduated from IAI Cameroon, perfectly bilingual (French/English), specialized in web and mobile development with an approach focused on innovation and social impact.',
+      description2: 'Digital transformation expert with proven experience in digitalizing community organizations and digital training. Karate Wado Ryu instructor, I combine martial discipline with technological excellence.',
       years: 'Years of Experience',
       projects: 'Projects Completed',
       women: 'Women Trained',
       languages: 'Languages Mastered'
+    },
+    skills: {
+      title: 'Technical Skills',
+      subtitle: 'Complete mastery of the modern development ecosystem',
+      programming: 'Languages',
+      frameworks: 'Frameworks',
+      databases: 'Databases',
+      tools: 'Tools & DevOps',
+      level: 'Level',
+      experience: 'years of experience'
+    },
+    projects: {
+      title: 'Projects & Achievements',
+      subtitle: 'Discover my latest creations and technological innovations',
+      viewDetails: 'View details',
+      viewCode: 'View code',
+      viewDemo: 'View demo',
+      technologies: 'Technologies used',
+      features: 'Key features',
+      status: 'Status',
+      progress: 'Progress',
+      noResults: 'No projects found'
+    },
+    blog: {
+      title: 'Blog & Articles',
+      subtitle: 'My thoughts on technology, development and innovation in Africa',
+      readMore: 'Read article',
+      readTime: 'min read',
+      featured: 'Featured',
+      viewAll: 'View all articles'
     },
     contact: {
       title: 'Contact Me',
       subtitle: 'Ready to collaborate on your next project? Feel free to reach out!',
       email: 'Send Email',
       whatsapp: 'WhatsApp',
-      call: 'Call'
+      call: 'Call',
+      availability: 'Availability',
+      services: 'Services',
+      response: 'Response within 24h',
+      remote: 'Remote work possible',
+      newProjects: 'Available for new projects'
+    },
+    footer: {
+      description: 'Software Engineer passionate about technological innovation in Africa.',
+      navigation: 'Navigation',
+      services: 'Services',
+      contact: 'Contact',
+      rights: 'All rights reserved.',
+      madeWith: 'Developed with ❤️ using React.js, Framer Motion & Tailwind CSS'
+    },
+    common: {
+      loading: 'Loading...',
+      error: 'An error occurred',
+      tryAgain: 'Try again',
+      close: 'Close',
+      open: 'Open',
+      menu: 'Menu',
+      search: 'Search...',
+      filter: 'Filter',
+      all: 'All',
+      install: 'Install app',
+      share: 'Share',
+      copy: 'Copy',
+      copied: 'Copied!',
+      online: 'Online',
+      offline: 'Offline'
     }
   }
 };
@@ -154,40 +386,45 @@ const useLanguage = () => {
   return context;
 };
 
-// Enhanced project data with galleries
+const useAnalytics = () => {
+  const context = useContext(AnalyticsContext);
+  if (!context) throw new Error('useAnalytics must be used within AnalyticsProvider');
+  return context;
+};
+
+// Enhanced project data
 const enhancedProjects = [
   {
     id: 1,
     title: "EAT FAST",
     description: "Application de livraison de nourriture 100% Camerounaise",
-    longDescription: "Plateforme complète de livraison de repas conçue spécifiquement pour le marché camerounais, intégrant les solutions de paiement mobile money et la géolocalisation.",
+    longDescription: "Plateforme complète de livraison de repas conçue spécifiquement pour le marché camerounais, intégrant les solutions de paiement mobile money et la géolocalisation adaptée aux réalités locales.",
     period: "Avril 2025 - Présent",
     status: "En développement",
     progress: 75,
-    tech: ["React.js", "Django REST", "PostgreSQL", "React Native", "Mobile Money API"],
+    tech: ["React.js", "Django REST", "PostgreSQL", "React Native", "Mobile Money API", "Redis"],
     features: [
-      "Géolocalisation intégrée",
+      "Géolocalisation intégrée adaptée aux villes camerounaises",
       "Paiement mobile money (Orange Money, MTN MoMo)",
-      "Interface multilingue",
+      "Interface multilingue (français/anglais)",
       "Notifications push en temps réel",
-      "Système de tracking de commandes",
-      "Dashboard analytics pour restaurants"
+      "Système de tracking de commandes intelligent",
+      "Dashboard analytics pour restaurants",
+      "Mode hors ligne pour zones à faible connectivité",
+      "Optimisation pour les connexions 2G/3G"
     ],
     category: "Mobile App",
     type: "Personal Project",
     github: "https://github.com/momoyvan/eat-fast",
     demo: "https://eat-fast-demo.vercel.app",
     images: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600"
+      "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f0f9ff'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%230284c7' font-size='24' font-family='Arial'%3EEAT FAST - App Screenshot%3C/text%3E%3C/svg%3E"
     ],
-    video: "/api/placeholder/video",
-    testimonial: {
-      text: "Une solution innovante parfaitement adaptée au marché camerounais",
-      author: "Client Test",
-      role: "Restaurant Owner"
-    }
+    highlights: [
+      "Interface optimisée pour le marché africain",
+      "Intégration native des systèmes de paiement locaux",
+      "Performance adaptée aux connexions limitées"
+    ]
   },
   {
     id: 2,
@@ -202,7 +439,7 @@ const enhancedProjects = [
       "CMS personnalisé pour blog",
       "Optimisation SEO avancée",
       "Analytics en temps réel",
-      "Interface d'administration",
+      "Interface d'administration intuitive",
       "Cache Redis pour performance",
       "Tâches asynchrones avec Celery"
     ],
@@ -211,8 +448,7 @@ const enhancedProjects = [
     github: "https://github.com/momoyvan/django-portfolio",
     demo: "https://momoyvan-porfoloi.onrender.com",
     images: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600"
+      "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f8fafc'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%230369a1' font-size='24' font-family='Arial'%3EDjango Portfolio%3C/text%3E%3C/svg%3E"
     ]
   },
   {
@@ -237,12 +473,8 @@ const enhancedProjects = [
     github: "https://github.com/momoyvan/radio-platform",
     demo: "https://radio-flambou.cm",
     images: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600"
-    ],
-    video: "/api/placeholder/video"
+      "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23ecfdf5'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%23059669' font-size='24' font-family='Arial'%3ERadio Platform%3C/text%3E%3C/svg%3E"
+    ]
   },
   {
     id: 4,
@@ -266,8 +498,7 @@ const enhancedProjects = [
     github: "https://github.com/protegeqv/formation-platform",
     demo: "https://formation.protegeqv.org",
     images: [
-      "/api/placeholder/800/600",
-      "/api/placeholder/800/600"
+      "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23fef3c7'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%23d97706' font-size='24' font-family='Arial'%3EE-Learning Platform%3C/text%3E%3C/svg%3E"
     ]
   },
   {
@@ -291,358 +522,524 @@ const enhancedProjects = [
     type: "Innovation Project",
     github: "https://github.com/momoyvan/smart-city-yaounde",
     images: [
-      "/api/placeholder/800/600"
+      "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f3e8ff'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%237c3aed' font-size='24' font-family='Arial'%3ESmart City Dashboard%3C/text%3E%3C/svg%3E"
     ]
   }
 ];
 
-// Blog posts data
+// Enhanced blog posts
 const blogPosts = [
   {
     id: 1,
     title: "Guide Complet du Développement Web Moderne au Cameroun",
     slug: "guide-developpement-web-moderne-cameroun",
     excerpt: "Découvrez les meilleures pratiques et technologies pour le développement web adapté au contexte camerounais.",
-    content: `# Guide Complet du Développement Web Moderne au Cameroun
-
-Le développement web au Cameroun connaît une croissance remarquable. Dans cet article, nous explorons les technologies et approches les plus adaptées à notre contexte local.
-
-## Technologies Recommandées
-
-### Frontend
-- **React.js** : Parfait pour les applications interactives
-- **Vue.js** : Alternative excellente, plus simple à apprendre
-- **Tailwind CSS** : Framework CSS utilitaire
-
-### Backend
-- **Django** : Idéal pour les applications complexes
-- **Laravel** : Excellent pour le développement rapide
-- **Node.js** : Parfait pour les applications temps réel
-
-## Défis Locaux
-
-### Connectivité Internet
-- Optimisation pour les connexions lentes
-- Mise en cache aggressive
-- Progressive Web Apps (PWA)
-
-### Paiements Mobile Money
-- Intégration Orange Money
-- API MTN Mobile Money
-- Solutions hybrides
-
-## Conclusion
-
-Le développement web au Cameroun nécessite une approche adaptée à nos réalités locales tout en restant à la pointe de la technologie.`,
     author: "MOMO GODI YVAN",
     date: "2025-01-15",
     readTime: 8,
     tags: ["Web Development", "Cameroun", "React", "Django"],
-    image: "/api/placeholder/800/400",
-    featured: true
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23dbeafe'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%231d4ed8' font-size='20' font-family='Arial'%3EGuide Développement Web%3C/text%3E%3C/svg%3E",
+    featured: true,
+    views: 1250,
+    likes: 89
   },
   {
     id: 2,
     title: "L'IA et le Développement : Révolution ou Evolution ?",
     slug: "ia-developpement-revolution-evolution",
     excerpt: "Analyse de l'impact de l'intelligence artificielle sur le métier de développeur en Afrique.",
-    content: `# L'IA et le Développement : Révolution ou Evolution ?
-
-L'intelligence artificielle transforme notre façon de développer. Voici mon analyse de cette transformation.
-
-## Impact sur les Développeurs
-
-### Outils d'Assistance
-- GitHub Copilot
-- ChatGPT pour le code
-- Outils de debugging automatisé
-
-### Nouvelles Compétences Requises
-- Prompt engineering
-- Compréhension des modèles IA
-- Ethics de l'IA
-
-## Opportunités en Afrique
-
-L'Afrique peut tirer parti de cette révolution pour accélérer son développement technologique.
-
-## Conclusion
-
-L'IA est un outil puissant qui augmente nos capacités plutôt que de nous remplacer.`,
     author: "MOMO GODI YVAN",
     date: "2025-01-10",
     readTime: 6,
     tags: ["IA", "Développement", "Afrique", "Innovation"],
-    image: "/api/placeholder/800/400",
-    featured: false
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23dcfce7'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%23166534' font-size='20' font-family='Arial'%3EIA et Développement%3C/text%3E%3C/svg%3E",
+    featured: false,
+    views: 890,
+    likes: 67
   },
   {
     id: 3,
     title: "Transformation Digitale des PME Camerounaises",
     slug: "transformation-digitale-pme-camerounaises",
     excerpt: "Stratégies pratiques pour digitaliser les petites et moyennes entreprises au Cameroun.",
-    content: `# Transformation Digitale des PME Camerounaises
-
-La digitalisation n'est plus un luxe mais une nécessité pour les PME camerounaises.
-
-## Étapes Clés
-
-### 1. Audit Digital
-- Évaluation de l'existant
-- Identification des besoins
-- Définition des objectifs
-
-### 2. Solutions Prioritaires
-- Site web professionnel
-- Présence sur les réseaux sociaux
-- Outils de gestion clients
-
-### 3. Formation des Équipes
-- Sensibilisation aux outils digitaux
-- Formation continue
-- Support technique
-
-## Cas d'Usage
-
-### Radio Flambou Banka
-Notre transformation de cette radio communautaire montre qu'avec les bonnes approches, même les structures rurales peuvent se digitaliser efficacement.
-
-## ROI de la Digitalisation
-
-Les entreprises qui se digitalisent voient en moyenne :
-- +30% d'efficacité opérationnelle
-- +25% de nouveaux clients
-- +40% de satisfaction client
-
-## Conclusion
-
-La transformation digitale est un investissement rentable qui ouvre de nouvelles opportunités.`,
     author: "MOMO GODI YVAN",
     date: "2025-01-05",
     readTime: 10,
     tags: ["Transformation Digitale", "PME", "Cameroun", "Business"],
-    image: "/api/placeholder/800/400",
-    featured: true
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23fef3c7'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%23d97706' font-size='20' font-family='Arial'%3ETransformation Digitale%3C/text%3E%3C/svg%3E",
+    featured: true,
+    views: 1100,
+    likes: 92
   }
 ];
 
-// 3D Icon Component
-const Icon3D = ({ icon: IconComponent, className = "", animate = true }) => (
-  <motion.div
-    className={`relative ${className}`}
-    whileHover={animate ? { 
-      scale: 1.1,
-      rotateY: 15,
-      rotateX: 15,
-      z: 50
-    } : {}}
-    transition={{ duration: 0.3 }}
-    style={{
-      transformStyle: 'preserve-3d',
-      transformOrigin: 'center center'
-    }}
-  >
-    <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-600/20 rounded-lg blur-xl transform translate-z-[-10px]" />
-    <div className="relative bg-gradient-to-br from-blue-500 to-purple-600 p-3 rounded-lg shadow-lg">
-      <IconComponent className="text-white" size={24} />
-    </div>
-  </motion.div>
-);
+// Personal information
+const personalInfo = {
+  name: "MOMO GODI YVAN",
+  location: "Yaoundé VI, Biyemassi, Maison Blanche, Cameroun",
+  email: "yvangodimomo@gmail.com",
+  phone: "+237695922065",
+  whatsapp: "+237695922065",
+  portfolio: "https://momoyvan-porfoloi.onrender.com",
+  linkedin: "https://linkedin.com/in/momo-godi-yvan-206642244",
+  github: "https://github.com/momoyvan",
+  website: "https://www.protegeqv.org",
+  instagram: "https://instagram.com/momoyvan",
+  twitter: "https://twitter.com/momoyvan",
+  youtube: "https://youtube.com/@momoyvan",
+  resume: "/MOMO_YVAN_CV.pdf"
+};
 
-// Project Filter Component
-const ProjectFilter = ({ projects, onFilter, activeFilter }) => {
-  const categories = ['All', ...new Set(projects.map(p => p.category))];
-  
+// Enhanced skills data
+const skills = {
+  programming: [
+    { name: "Python", level: 92, icon: "🐍", category: "Backend", years: 4 },
+    { name: "JavaScript", level: 88, icon: "📜", category: "Frontend", years: 3 },
+    { name: "TypeScript", level: 85, icon: "📘", category: "Frontend", years: 2 },
+    { name: "PHP", level: 82, icon: "🌐", category: "Backend", years: 3 },
+    { name: "Dart", level: 78, icon: "🎯", category: "Mobile", years: 2 },
+    { name: "Java", level: 75, icon: "☕", category: "Backend", years: 2 }
+  ],
+  frameworks: [
+    { name: "React.js", level: 90, icon: "⚛️", category: "Frontend", years: 3 },
+    { name: "Django", level: 88, icon: "🎸", category: "Backend", years: 4 },
+    { name: "Laravel", level: 85, icon: "🏗️", category: "Backend", years: 3 },
+    { name: "Vue.js", level: 82, icon: "💚", category: "Frontend", years: 2 },
+    { name: "Flutter", level: 80, icon: "📱", category: "Mobile", years: 2 },
+    { name: "Next.js", level: 78, icon: "▲", category: "Frontend", years: 2 },
+    { name: "Flask", level: 75, icon: "🌶️", category: "Backend", years: 2 },
+    { name: "React Native", level: 75, icon: "📱", category: "Mobile", years: 2 }
+  ],
+  databases: [
+    { name: "PostgreSQL", level: 85, icon: "🐘", category: "Database", years: 3 },
+    { name: "MySQL", level: 88, icon: "🗄️", category: "Database", years: 4 },
+    { name: "MongoDB", level: 80, icon: "🍃", category: "Database", years: 2 },
+    { name: "Redis", level: 75, icon: "🔴", category: "Cache", years: 2 },
+    { name: "SQLite", level: 82, icon: "💾", category: "Database", years: 3 }
+  ],
+  tools: [
+    { name: "Git/GitHub", level: 90, icon: "🔧", category: "Version Control", years: 4 },
+    { name: "Docker", level: 78, icon: "🐳", category: "DevOps", years: 2 },
+    { name: "AWS", level: 75, icon: "☁️", category: "Cloud", years: 2 },
+    { name: "Linux", level: 85, icon: "🐧", category: "System", years: 3 },
+    { name: "Figma", level: 80, icon: "🎨", category: "Design", years: 2 },
+    { name: "Postman", level: 88, icon: "📮", category: "API", years: 3 }
+  ]
+};
+
+// Components
+const LoadingSpinner = ({ size = 'md' }) => {
+  const sizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-8 h-8',
+    lg: 'w-12 h-12'
+  };
+
   return (
-    <div className="flex flex-wrap gap-2 justify-center mb-8">
-      {categories.map(category => (
-        <button
-          key={category}
-          onClick={() => onFilter(category)}
-          className={`px-4 py-2 rounded-full transition-all duration-200 ${
-            activeFilter === category
-              ? 'bg-primary-600 text-white shadow-lg'
-              : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-gray-600'
-          }`}
-        >
-          {category}
-        </button>
-      ))}
-    </div>
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+      className={`${sizeClasses[size]} border-2 border-primary-600 border-t-transparent rounded-full`}
+    />
   );
 };
 
-// Blog Card Component
-const BlogCard = ({ post, t }) => (
-  <motion.article
-    whileHover={{ y: -10 }}
-    className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-  >
-    <div className="relative overflow-hidden">
-      <img 
-        src={post.image} 
-        alt={post.title}
-        className="w-full h-48 object-cover transition-transform duration-300 hover:scale-110"
-      />
-      {post.featured && (
-        <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-          ⭐ Featured
-        </div>
-      )}
-    </div>
-    
-    <div className="p-6">
-      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-3">
-        <span className="flex items-center gap-1">
-          <Calendar size={16} />
-          {new Date(post.date).toLocaleDateString('fr-FR')}
-        </span>
-        <span className="flex items-center gap-1">
-          <Clock size={16} />
-          {post.readTime} min
-        </span>
-      </div>
-      
-      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
-        {post.title}
-      </h3>
-      
-      <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
-        {post.excerpt}
-      </p>
-      
-      <div className="flex flex-wrap gap-2 mb-4">
-        {post.tags.slice(0, 3).map(tag => (
-          <span 
-            key={tag}
-            className="bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded text-xs"
-          >
-            {tag}
-          </span>
-        ))}
-      </div>
-      
-      <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
-        Lire l'article
-        <ArrowRight size={16} />
-      </button>
-    </div>
-  </motion.article>
-);
+const OfflineIndicator = ({ isOnline }) => {
+  if (isOnline) return null;
 
-// Enhanced Portfolio Component
+  return (
+    <motion.div
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      className="fixed top-0 left-0 right-0 bg-red-600 text-white p-2 text-center text-sm z-50"
+    >
+      <div className="flex items-center justify-center gap-2">
+        <WifiOff size={16} />
+        Vous êtes hors ligne. Certaines fonctionnalités peuvent être limitées.
+      </div>
+    </motion.div>
+  );
+};
+
+const PWAInstallPrompt = ({ installPrompt, onInstall }) => {
+  if (!installPrompt) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 100 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="fixed bottom-4 right-4 bg-primary-600 text-white p-4 rounded-lg shadow-lg max-w-sm z-50"
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-1">
+          <h3 className="font-semibold mb-1">Installer l'application</h3>
+          <p className="text-sm text-blue-100 mb-3">
+            Accédez rapidement à mon portfolio depuis votre écran d'accueil
+          </p>
+          <div className="flex gap-2">
+            <button
+              onClick={onInstall}
+              className="bg-white text-primary-600 px-3 py-1 rounded text-sm font-medium hover:bg-gray-100"
+            >
+              Installer
+            </button>
+            <button
+              onClick={() => setInstallPrompt(null)}
+              className="text-blue-200 hover:text-white text-sm"
+            >
+              Plus tard
+            </button>
+          </div>
+        </div>
+        <button
+          onClick={() => setInstallPrompt(null)}
+          className="text-blue-200 hover:text-white"
+        >
+          <X size={16} />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+const SkillCard = ({ skill, index, category }) => {
+  const { theme } = useTheme();
+  
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ scale: 1.02 }}
+      className={`p-4 rounded-lg transition-all duration-300 ${
+        theme === 'dark' 
+          ? 'bg-gray-800/50 hover:bg-gray-800/70' 
+          : 'bg-white/70 hover:bg-white/90'
+      }`}
+    >
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{skill.icon}</span>
+          <div>
+            <div className={`font-semibold ${
+              theme === 'dark' ? 'text-white' : 'text-gray-900'
+            }`}>
+              {skill.name}
+            </div>
+            <div className={`text-xs ${
+              theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              {skill.years} {skill.years === 1 ? 'an' : 'ans'}
+            </div>
+          </div>
+        </div>
+        <span className={`text-sm font-bold ${
+          skill.level >= 85 ? 'text-green-500' :
+          skill.level >= 75 ? 'text-blue-500' :
+          skill.level >= 65 ? 'text-yellow-500' : 'text-orange-500'
+        }`}>
+          {skill.level}%
+        </span>
+      </div>
+      <div className={`w-full h-2 rounded-full overflow-hidden ${
+        theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+      }`}>
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: `${skill.level}%` }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
+          className={`h-full rounded-full ${
+            skill.level >= 85 ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
+            skill.level >= 75 ? 'bg-gradient-to-r from-blue-400 to-cyan-500' :
+            skill.level >= 65 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
+            'bg-gradient-to-r from-orange-400 to-red-500'
+          }`}
+        />
+      </div>
+    </motion.div>
+  );
+};
+
+const ProjectCard = ({ project, index, onSelect, t }) => {
+  const { theme } = useTheme();
+  const { trackEvent } = useAnalytics();
+
+  const handleProjectClick = () => {
+    trackEvent('project_view', {
+      category: 'portfolio',
+      label: project.title,
+      project_category: project.category
+    });
+    onSelect(project);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ y: -10 }}
+      className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl cursor-pointer ${
+        theme === 'dark' 
+          ? 'bg-gray-800/70 hover:bg-gray-800' 
+          : 'bg-white hover:bg-gray-50'
+      }`}
+      onClick={handleProjectClick}
+    >
+      <div className="relative overflow-hidden">
+        <img 
+          src={project.images[0]} 
+          alt={project.title}
+          className="w-full h-48 object-cover transition-transform duration-300 hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="absolute top-4 left-4 flex gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            project.status === 'En développement' ? 'bg-yellow-500/90 text-white' :
+            project.status === 'Terminé' ? 'bg-green-500/90 text-white' :
+            project.status === 'Production' ? 'bg-blue-500/90 text-white' :
+            'bg-gray-500/90 text-white'
+          }`}>
+            {project.status}
+          </span>
+          <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
+            {project.category}
+          </span>
+        </div>
+        <div className="absolute bottom-4 right-4">
+          <div className="flex gap-2">
+            {project.github && (
+              <a
+                href={project.github}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
+              >
+                <Github size={16} />
+              </a>
+            )}
+            {project.demo && (
+              <a
+                href={project.demo}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
+              >
+                <ExternalLink size={16} />
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <h3 className={`text-xl font-bold mb-2 ${
+          theme === 'dark' ? 'text-white' : 'text-gray-900'
+        }`}>
+          {project.title}
+        </h3>
+        
+        <p className={`mb-4 line-clamp-2 ${
+          theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
+        }`}>
+          {project.description}
+        </p>
+        
+        <div className="mb-4">
+          <div className={`text-sm mb-2 ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`}>
+            {project.period}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {project.tech.slice(0, 3).map((tech, idx) => (
+              <span 
+                key={idx}
+                className="bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded text-xs font-medium"
+              >
+                {tech}
+              </span>
+            ))}
+            {project.tech.length > 3 && (
+              <span className={`px-2 py-1 rounded text-xs ${
+                theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+              }`}>
+                +{project.tech.length - 3}
+              </span>
+            )}
+          </div>
+        </div>
+        
+        {project.progress && (
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                {t.projects.progress}
+              </span>
+              <span className="text-primary-600 font-medium">
+                {project.progress}%
+              </span>
+            </div>
+            <div className={`w-full h-2 rounded-full ${
+              theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+            }`}>
+              <motion.div
+                initial={{ width: 0 }}
+                whileInView={{ width: `${project.progress}%` }}
+                viewport={{ once: true }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full"
+              />
+            </div>
+          </div>
+        )}
+        
+        <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
+          {t.projects.viewDetails}
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </motion.div>
+  );
+};
+
+const BlogCard = ({ post, t }) => {
+  const { theme } = useTheme();
+  const { trackEvent } = useAnalytics();
+
+  const handleReadPost = () => {
+    trackEvent('blog_read', {
+      category: 'content',
+      label: post.title,
+      reading_time: post.readTime
+    });
+  };
+
+  return (
+    <motion.article
+      whileHover={{ y: -10 }}
+      className={`rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer ${
+        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+      }`}
+      onClick={handleReadPost}
+    >
+      <div className="relative overflow-hidden">
+        <img 
+          src={post.image} 
+          alt={post.title}
+          className="w-full h-48 object-cover transition-transform duration-300 hover:scale-110"
+        />
+        {post.featured && (
+          <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
+            <Star size={14} />
+            {t.blog.featured}
+          </div>
+        )}
+        <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+          <Clock size={14} />
+          {post.readTime} {t.blog.readTime}
+        </div>
+      </div>
+      
+      <div className="p-6">
+        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mb-3">
+          <span className="flex items-center gap-1">
+            <Calendar size={16} />
+            {new Date(post.date).toLocaleDateString('fr-FR')}
+          </span>
+          <span className="flex items-center gap-1">
+            <Eye size={16} />
+            {post.views || 0}
+          </span>
+        </div>
+        
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 line-clamp-2">
+          {post.title}
+        </h3>
+        
+        <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">
+          {post.excerpt}
+        </p>
+        
+        <div className="flex flex-wrap gap-2 mb-4">
+          {post.tags.slice(0, 3).map(tag => (
+            <span 
+              key={tag}
+              className="bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded text-xs"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+        
+        <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
+          {t.blog.readMore}
+          <ArrowRight size={16} />
+        </button>
+      </div>
+    </motion.article>
+  );
+};
+
+const ContactMethod = ({ method, t }) => {
+  const { trackEvent } = useAnalytics();
+
+  const handleContact = () => {
+    trackEvent('contact_attempt', {
+      category: 'conversion',
+      label: method.type
+    });
+  };
+
+  return (
+    <motion.a
+      href={method.href}
+      target={method.type === 'whatsapp' ? '_blank' : undefined}
+      rel={method.type === 'whatsapp' ? 'noopener noreferrer' : undefined}
+      whileHover={{ scale: 1.05, y: -5 }}
+      className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 transition-all duration-300 hover:bg-white/20 group block"
+      onClick={handleContact}
+    >
+      <div className={`w-16 h-16 ${method.color} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
+        <method.icon size={32} className="text-white" />
+      </div>
+      <h3 className="font-bold text-lg mb-2 text-white">{method.label}</h3>
+      <p className="text-blue-100 text-sm">{method.value}</p>
+    </motion.a>
+  );
+};
+
+// Main Portfolio Component
 const EnhancedPortfolio = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [projectFilter, setProjectFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
-  const [selectedBlogPost, setSelectedBlogPost] = useState(null);
-  const [isVideoPlaying, setIsVideoPlaying] = useState({});
+  const [copied, setCopied] = useState('');
   
   const { theme, toggleTheme } = useTheme();
   const { language, changeLanguage } = useLanguage();
+  const { isOnline, installPrompt, installPWA, trackEvent } = useAnalytics();
+  
   const t = translations[language];
-
   const { scrollYProgress } = useScroll();
-  const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '100%']);
-
-  // Personal Information
-  const personalInfo = {
-    name: "MOMO GODI YVAN",
-    title: t.hero.subtitle,
-    location: "Yaoundé VI, Biyemassi, Maison Blanche, Cameroun",
-    email: "yvangodimomo@gmail.com",
-    phone: "+237695922065",
-    whatsapp: "+237695922065",
-    portfolio: "https://momoyvan-porfoloi.onrender.com",
-    linkedin: "https://linkedin.com/in/momo-godi-yvan-206642244",
-    github: "https://github.com/momoyvan",
-    website: "https://www.protegeqv.org",
-    instagram: "https://instagram.com/momoyvan",
-    twitter: "https://twitter.com/momoyvan",
-    youtube: "https://youtube.com/@momoyvan"
-  };
-
-  // Enhanced Skills Data
-  const skills = {
-    programming: [
-      { name: "Python", level: 92, icon: "🐍", category: "Backend", years: 4 },
-      { name: "JavaScript", level: 88, icon: "📜", category: "Frontend", years: 3 },
-      { name: "TypeScript", level: 85, icon: "📘", category: "Frontend", years: 2 },
-      { name: "PHP", level: 82, icon: "🌐", category: "Backend", years: 3 },
-      { name: "Dart", level: 78, icon: "🎯", category: "Mobile", years: 2 },
-      { name: "Java", level: 75, icon: "☕", category: "Backend", years: 2 }
-    ],
-    frameworks: [
-      { name: "React.js", level: 90, icon: "⚛️", category: "Frontend", years: 3 },
-      { name: "Django", level: 88, icon: "🎸", category: "Backend", years: 4 },
-      { name: "Laravel", level: 85, icon: "🏗️", category: "Backend", years: 3 },
-      { name: "Vue.js", level: 82, icon: "💚", category: "Frontend", years: 2 },
-      { name: "Flutter", level: 80, icon: "📱", category: "Mobile", years: 2 },
-      { name: "Next.js", level: 78, icon: "▲", category: "Frontend", years: 2 },
-      { name: "Flask", level: 75, icon: "🌶️", category: "Backend", years: 2 },
-      { name: "React Native", level: 75, icon: "📱", category: "Mobile", years: 2 }
-    ],
-    databases: [
-      { name: "PostgreSQL", level: 85, icon: "🐘", category: "Database", years: 3 },
-      { name: "MySQL", level: 88, icon: "🗄️", category: "Database", years: 4 },
-      { name: "MongoDB", level: 80, icon: "🍃", category: "Database", years: 2 },
-      { name: "Redis", level: 75, icon: "🔴", category: "Cache", years: 2 },
-      { name: "SQLite", level: 82, icon: "💾", category: "Database", years: 3 }
-    ],
-    tools: [
-      { name: "Git/GitHub", level: 90, icon: "🔧", category: "Version Control", years: 4 },
-      { name: "Docker", level: 78, icon: "🐳", category: "DevOps", years: 2 },
-      { name: "AWS", level: 75, icon: "☁️", category: "Cloud", years: 2 },
-      { name: "Linux", level: 85, icon: "🐧", category: "System", years: 3 },
-      { name: "Figma", level: 80, icon: "🎨", category: "Design", years: 2 },
-      { name: "Postman", level: 88, icon: "📮", category: "API", years: 3 }
-    ]
-  };
-
-  // Filter projects
-  const filteredProjects = enhancedProjects.filter(project => {
-    const matchesFilter = projectFilter === 'All' || project.category === projectFilter;
-    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
-  });
+  const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
 
   // Navigation items
   const navItems = [
-    { id: 'home', label: t.nav.home, icon: Globe },
+    { id: 'home', label: t.nav.home, icon: Home },
     { id: 'about', label: t.nav.about, icon: Users },
     { id: 'skills', label: t.nav.skills, icon: Code },
-    { id: 'experience', label: t.nav.experience, icon: Briefcase },
     { id: 'projects', label: t.nav.projects, icon: Rocket },
     { id: 'blog', label: t.nav.blog, icon: BookOpen },
-    { id: 'gallery', label: t.nav.gallery, icon: Camera },
-    { id: 'education', label: t.nav.education, icon: GraduationCap },
     { id: 'contact', label: t.nav.contact, icon: MessageCircle }
   ];
-
-  // Animation variants
-  const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: "easeOut" }
-  };
-
-  const stagger = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  // Scroll to section
-  const scrollToSection = (sectionId) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
-    setActiveSection(sectionId);
-    setIsMenuOpen(false);
-  };
 
   // Contact methods
   const contactMethods = [
@@ -672,27 +1069,76 @@ const EnhancedPortfolio = () => {
     }
   ];
 
-  // Google Analytics Effect
+  // Filter projects
+  const filteredProjects = enhancedProjects.filter(project => {
+    const matchesFilter = projectFilter === 'All' || project.category === projectFilter;
+    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         project.description.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesFilter && matchesSearch;
+  });
+
+  // Animation variants
+  const fadeInUp = {
+    initial: { opacity: 0, y: 60 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.6, ease: "easeOut" }
+  };
+
+  const stagger = {
+    animate: {
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  // Utility functions
+  const scrollToSection = (sectionId) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+    setActiveSection(sectionId);
+    setIsMenuOpen(false);
+    trackEvent('section_view', {
+      category: 'navigation',
+      label: sectionId
+    });
+  };
+
+  const copyToClipboard = async (text, type) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(type);
+      setTimeout(() => setCopied(''), 2000);
+      trackEvent('copy_contact', { category: 'interaction', label: type });
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  const downloadResume = () => {
+    trackEvent('resume_download', { category: 'conversion' });
+    // In a real app, this would trigger a file download
+    window.open(personalInfo.resume, '_blank');
+  };
+
+  // Intersection Observer for active section
   useEffect(() => {
-    // Google Analytics 4
-    const script1 = document.createElement('script');
-    script1.async = true;
-    script1.src = 'https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID';
-    document.head.appendChild(script1);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
 
-    const script2 = document.createElement('script');
-    script2.innerHTML = `
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-      gtag('config', 'GA_MEASUREMENT_ID');
-    `;
-    document.head.appendChild(script2);
+    navItems.forEach((item) => {
+      const element = document.getElementById(item.id);
+      if (element) observer.observe(element);
+    });
 
-    return () => {
-      document.head.removeChild(script1);
-      document.head.removeChild(script2);
-    };
+    return () => observer.disconnect();
   }, []);
 
   return (
@@ -701,9 +1147,15 @@ const EnhancedPortfolio = () => {
         ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900'
     }`}>
+      {/* Offline Indicator */}
+      <OfflineIndicator isOnline={isOnline} />
+
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt installPrompt={installPrompt} onInstall={installPWA} />
+
       {/* Animated Background */}
       <motion.div
-        className="fixed inset-0 opacity-30"
+        className="fixed inset-0 opacity-30 pointer-events-none"
         style={{ y: backgroundY }}
       >
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM5QzkyQUMiIGZpbGwtb3BhY2l0eT0iMC4xIj48Y2lyY2xlIGN4PSIzMCIgY3k9IjMwIiByPSI0Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20" />
@@ -733,6 +1185,7 @@ const EnhancedPortfolio = () => {
                       ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
+                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
                 >
                   {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
@@ -749,6 +1202,13 @@ const EnhancedPortfolio = () => {
                     <option value="fr">🇫🇷 FR</option>
                     <option value="en">🇬🇧 EN</option>
                   </select>
+                </div>
+                <div className="flex items-center gap-1">
+                  {isOnline ? (
+                    <Wifi size={16} className="text-green-500" title="Online" />
+                  ) : (
+                    <WifiOff size={16} className="text-red-500" title="Offline" />
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -817,7 +1277,7 @@ const EnhancedPortfolio = () => {
 
       {/* Hero Section */}
       <section id="home" className="pt-20 pb-12 min-h-screen flex items-center relative overflow-hidden">
-        {/* Floating Elements */}
+        {/* Floating particles */}
         <div className="absolute inset-0 overflow-hidden">
           {[...Array(20)].map((_, i) => (
             <motion.div
@@ -879,11 +1339,21 @@ const EnhancedPortfolio = () => {
             <motion.p 
               {...fadeInUp}
               transition={{ delay: 0.2 }}
-              className={`text-xl md:text-2xl mb-8 leading-relaxed ${
+              className={`text-xl md:text-2xl mb-4 leading-relaxed ${
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
               }`}
             >
-              {personalInfo.title}
+              {t.hero.subtitle}
+            </motion.p>
+
+            <motion.p 
+              {...fadeInUp}
+              transition={{ delay: 0.3 }}
+              className={`text-lg mb-8 ${
+                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+              }`}
+            >
+              {t.hero.description}
             </motion.p>
 
             <motion.div 
@@ -905,12 +1375,19 @@ const EnhancedPortfolio = () => {
                 onClick={() => scrollToSection('projects')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className={`border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white px-8 py-4 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
-                  theme === 'dark' ? 'hover:bg-primary-600' : ''
-                }`}
+                className={`border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white px-8 py-4 rounded-lg font-medium transition-all duration-200 flex items-center gap-2`}
               >
                 <Rocket size={20} />
                 {t.hero.cta2}
+              </motion.button>
+              <motion.button 
+                onClick={downloadResume}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-lg font-medium transition-all duration-200 flex items-center gap-2`}
+              >
+                <Download size={20} />
+                {t.hero.cta3}
               </motion.button>
             </motion.div>
 
@@ -930,8 +1407,8 @@ const EnhancedPortfolio = () => {
                 <span className="text-sm">{t.hero.availability}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Zap size={16} className="text-green-500" />
-                <span className="text-sm text-green-500">En ligne</span>
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-500">{t.hero.status}</span>
               </div>
             </motion.div>
 
@@ -942,7 +1419,7 @@ const EnhancedPortfolio = () => {
               className="flex justify-center space-x-4 mt-8"
             >
               {[
-                { icon: Linkedin, href: `https://${personalInfo.linkedin}`, color: 'hover:text-blue-600' },
+                { icon: Linkedin, href: personalInfo.linkedin, color: 'hover:text-blue-600' },
                 { icon: Github, href: personalInfo.github, color: 'hover:text-gray-600' },
                 { icon: Instagram, href: personalInfo.instagram, color: 'hover:text-pink-600' },
                 { icon: Twitter, href: personalInfo.twitter, color: 'hover:text-blue-400' },
@@ -955,6 +1432,7 @@ const EnhancedPortfolio = () => {
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.2, y: -5 }}
                   className={`p-3 rounded-full bg-white/10 backdrop-blur-sm transition-colors ${social.color}`}
+                  onClick={() => trackEvent('social_link_click', { category: 'social', label: social.href })}
                 >
                   <social.icon size={24} />
                 </motion.a>
@@ -975,12 +1453,14 @@ const EnhancedPortfolio = () => {
             viewport={{ once: true }}
             className="max-w-6xl mx-auto"
           >
-            <motion.h2 
-              {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent"
-            >
-              {t.about.title}
-            </motion.h2>
+            <motion.div {...fadeInUp} className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+                {t.about.title}
+              </h2>
+              <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                {t.about.subtitle}
+              </p>
+            </motion.div>
             
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <motion.div
@@ -1009,7 +1489,7 @@ const EnhancedPortfolio = () => {
                     <motion.div
                       key={index}
                       whileHover={{ scale: 1.05 }}
-                      className={`p-6 rounded-xl bg-gradient-to-br ${stat.color} text-white transform transition-all duration-300`}
+                      className={`p-6 rounded-xl bg-gradient-to-br ${stat.color} text-white transform transition-all duration-300 cursor-pointer`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <stat.icon size={24} className="opacity-80" />
@@ -1047,13 +1527,15 @@ const EnhancedPortfolio = () => {
                     <motion.div
                       key={index}
                       whileHover={{ x: 10 }}
-                      className={`flex items-start gap-4 p-4 rounded-lg transition-all duration-300 ${
+                      className={`flex items-start gap-4 p-4 rounded-lg transition-all duration-300 cursor-pointer ${
                         theme === 'dark' 
                           ? 'bg-gray-700/50 hover:bg-gray-700' 
                           : 'bg-gray-50 hover:bg-gray-100'
                       }`}
                     >
-                      <Icon3D icon={specialty.icon} className="flex-shrink-0" />
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <specialty.icon className="text-white" size={24} />
+                      </div>
                       <div>
                         <div className={`font-semibold ${
                           theme === 'dark' ? 'text-white' : 'text-gray-900'
@@ -1086,12 +1568,14 @@ const EnhancedPortfolio = () => {
             viewport={{ once: true }}
             className="max-w-7xl mx-auto"
           >
-            <motion.h2 
-              {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent"
-            >
-              Compétences Techniques
-            </motion.h2>
+            <motion.div {...fadeInUp} className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+                {t.skills.title}
+              </h2>
+              <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                {t.skills.subtitle}
+              </p>
+            </motion.div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               {Object.entries(skills).map(([category, skillList], categoryIndex) => (
@@ -1108,60 +1592,16 @@ const EnhancedPortfolio = () => {
                   <h3 className={`text-xl font-bold mb-6 text-center ${
                     theme === 'dark' ? 'text-white' : 'text-gray-900'
                   }`}>
-                    {category === 'programming' ? 'Langages' : 
-                     category === 'frameworks' ? 'Frameworks' :
-                     category === 'databases' ? 'Bases de Données' : 'Outils'}
+                    {t.skills[category] || category}
                   </h3>
                   <div className="space-y-6">
                     {skillList.map((skill, index) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.1 * index }}
-                      >
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl">{skill.icon}</span>
-                            <div>
-                              <div className={`font-semibold ${
-                                theme === 'dark' ? 'text-white' : 'text-gray-900'
-                              }`}>
-                                {skill.name}
-                              </div>
-                              <div className={`text-xs ${
-                                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                              }`}>
-                                {skill.years} {skill.years === 1 ? 'an' : 'ans'}
-                              </div>
-                            </div>
-                          </div>
-                          <span className={`text-sm font-bold ${
-                            skill.level >= 85 ? 'text-green-500' :
-                            skill.level >= 75 ? 'text-blue-500' :
-                            skill.level >= 65 ? 'text-yellow-500' : 'text-orange-500'
-                          }`}>
-                            {skill.level}%
-                          </span>
-                        </div>
-                        <div className={`w-full h-3 rounded-full overflow-hidden ${
-                          theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-                        }`}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${skill.level}%` }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 1.5, delay: 0.5, ease: "easeOut" }}
-                            className={`h-full rounded-full ${
-                              skill.level >= 85 ? 'bg-gradient-to-r from-green-400 to-emerald-500' :
-                              skill.level >= 75 ? 'bg-gradient-to-r from-blue-400 to-cyan-500' :
-                              skill.level >= 65 ? 'bg-gradient-to-r from-yellow-400 to-orange-500' :
-                              'bg-gradient-to-r from-orange-400 to-red-500'
-                            }`}
-                          />
-                        </div>
-                      </motion.div>
+                      <SkillCard 
+                        key={index} 
+                        skill={skill} 
+                        index={index} 
+                        category={category} 
+                      />
                     ))}
                   </div>
                 </motion.div>
@@ -1171,7 +1611,7 @@ const EnhancedPortfolio = () => {
         </div>
       </section>
 
-      {/* Enhanced Projects Section */}
+      {/* Projects Section */}
       <section id="projects" className={`py-20 ${
         theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
       } backdrop-blur-sm`}>
@@ -1182,22 +1622,14 @@ const EnhancedPortfolio = () => {
             viewport={{ once: true }}
             className="max-w-7xl mx-auto"
           >
-            <motion.h2 
-              {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold text-center mb-8 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent"
-            >
-              Projets & Réalisations
-            </motion.h2>
-            
-            <motion.p
-              {...fadeInUp}
-              transition={{ delay: 0.2 }}
-              className={`text-center text-lg mb-12 ${
-                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-              }`}
-            >
-              Découvrez mes dernières créations et innovations technologiques
-            </motion.p>
+            <motion.div {...fadeInUp} className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+                {t.projects.title}
+              </h2>
+              <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                {t.projects.subtitle}
+              </p>
+            </motion.div>
 
             {/* Search and Filter */}
             <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-12">
@@ -1207,7 +1639,7 @@ const EnhancedPortfolio = () => {
                 }`} size={20} />
                 <input
                   type="text"
-                  placeholder="Rechercher un projet..."
+                  placeholder={t.common.search}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-colors ${
@@ -1217,11 +1649,21 @@ const EnhancedPortfolio = () => {
                   } focus:outline-none focus:ring-2 focus:ring-primary-500`}
                 />
               </div>
-              <ProjectFilter 
-                projects={enhancedProjects}
-                onFilter={setProjectFilter}
-                activeFilter={projectFilter}
-              />
+              <div className="flex flex-wrap gap-2">
+                {['All', ...new Set(enhancedProjects.map(p => p.category))].map(category => (
+                  <button
+                    key={category}
+                    onClick={() => setProjectFilter(category)}
+                    className={`px-4 py-2 rounded-full transition-all duration-200 ${
+                      projectFilter === category
+                        ? 'bg-primary-600 text-white shadow-lg'
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-primary-100 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {category === 'All' ? t.common.all : category}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Projects Grid */}
@@ -1231,134 +1673,13 @@ const EnhancedPortfolio = () => {
               className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
             >
               {filteredProjects.map((project, index) => (
-                <motion.div
-                  key={project.id}
-                  {...fadeInUp}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -10 }}
-                  className={`rounded-2xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl cursor-pointer ${
-                    theme === 'dark' 
-                      ? 'bg-gray-800/70 hover:bg-gray-800' 
-                      : 'bg-white hover:bg-gray-50'
-                  }`}
-                  onClick={() => setSelectedProject(project)}
-                >
-                  <div className="relative overflow-hidden">
-                    <img 
-                      src={project.images[0]} 
-                      alt={project.title}
-                      className="w-full h-48 object-cover transition-transform duration-300 hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute top-4 left-4 flex gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        project.status === 'En développement' ? 'bg-yellow-500/90 text-white' :
-                        project.status === 'Terminé' ? 'bg-green-500/90 text-white' :
-                        project.status === 'Production' ? 'bg-blue-500/90 text-white' :
-                        'bg-gray-500/90 text-white'
-                      }`}>
-                        {project.status}
-                      </span>
-                      <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium">
-                        {project.category}
-                      </span>
-                    </div>
-                    <div className="absolute bottom-4 right-4">
-                      <div className="flex gap-2">
-                        {project.github && (
-                          <a
-                            href={project.github}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-2 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
-                          >
-                            <Github size={16} />
-                          </a>
-                        )}
-                        {project.demo && (
-                          <a
-                            href={project.demo}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-2 bg-black/50 backdrop-blur-sm text-white rounded-full hover:bg-black/70 transition-colors"
-                          >
-                            <ExternalLink size={16} />
-                          </a>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h3 className={`text-xl font-bold mb-2 ${
-                      theme === 'dark' ? 'text-white' : 'text-gray-900'
-                    }`}>
-                      {project.title}
-                    </h3>
-                    
-                    <p className={`mb-4 line-clamp-2 ${
-                      theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      {project.description}
-                    </p>
-                    
-                    <div className="mb-4">
-                      <div className={`text-sm mb-2 ${
-                        theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                      }`}>
-                        {project.period}
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {project.tech.slice(0, 3).map((tech, idx) => (
-                          <span 
-                            key={idx}
-                            className="bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded text-xs font-medium"
-                          >
-                            {tech}
-                          </span>
-                        ))}
-                        {project.tech.length > 3 && (
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                          }`}>
-                            +{project.tech.length - 3}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {project.progress && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
-                            Progression
-                          </span>
-                          <span className="text-primary-600 font-medium">
-                            {project.progress}%
-                          </span>
-                        </div>
-                        <div className={`w-full h-2 rounded-full ${
-                          theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
-                        }`}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            whileInView={{ width: `${project.progress}%` }}
-                            viewport={{ once: true }}
-                            transition={{ duration: 1, delay: 0.5 }}
-                            className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full"
-                          />
-                        </div>
-                      </div>
-                    )}
-                    
-                    <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors">
-                      Voir les détails
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </motion.div>
+                <ProjectCard 
+                  key={project.id} 
+                  project={project} 
+                  index={index} 
+                  onSelect={setSelectedProject}
+                  t={t}
+                />
               ))}
             </motion.div>
 
@@ -1375,7 +1696,7 @@ const EnhancedPortfolio = () => {
                 <p className={`text-lg ${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  Aucun projet trouvé pour "{searchTerm}" dans la catégorie "{projectFilter}"
+                  {t.projects.noResults}
                 </p>
               </motion.div>
             )}
@@ -1394,22 +1715,14 @@ const EnhancedPortfolio = () => {
             viewport={{ once: true }}
             className="max-w-7xl mx-auto"
           >
-            <motion.h2 
-              {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold text-center mb-8 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent"
-            >
-              Blog & Articles
-            </motion.h2>
-            
-            <motion.p
-              {...fadeInUp}
-              transition={{ delay: 0.2 }}
-              className={`text-center text-lg mb-12 ${
-                theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-              }`}
-            >
-              Mes réflexions sur la technologie, le développement et l'innovation en Afrique
-            </motion.p>
+            <motion.div {...fadeInUp} className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+                {t.blog.title}
+              </h2>
+              <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                {t.blog.subtitle}
+              </p>
+            </motion.div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {blogPosts.map((post, index) => (
@@ -1422,60 +1735,19 @@ const EnhancedPortfolio = () => {
               transition={{ delay: 0.6 }}
               className="text-center mt-12"
             >
-              <button className="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 mx-auto">
+              <button 
+                className="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 mx-auto"
+                onClick={() => trackEvent('view_all_blog', { category: 'navigation' })}
+              >
                 <BookOpen size={20} />
-                Voir tous les articles
+                {t.blog.viewAll}
               </button>
             </motion.div>
           </motion.div>
         </div>
       </section>
 
-      {/* Gallery Section */}
-      <section id="gallery" className={`py-20 ${
-        theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
-      } backdrop-blur-sm`}>
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="max-w-7xl mx-auto"
-          >
-            <motion.h2 
-              {...fadeInUp}
-              className="text-4xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent"
-            >
-              Galerie & Réalisations
-            </motion.h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {[...Array(12)].map((_, index) => (
-                <motion.div
-                  key={index}
-                  {...fadeInUp}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.05 }}
-                  className="relative group cursor-pointer rounded-lg overflow-hidden"
-                >
-                  <img
-                    src={`/api/placeholder/400/300`}
-                    alt={`Gallery ${index + 1}`}
-                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <button className="text-white p-2 rounded-full bg-white/20 backdrop-blur-sm">
-                      <Eye size={24} />
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Enhanced Contact Section */}
+      {/* Contact Section */}
       <section id="contact" className="py-20 bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 text-white relative overflow-hidden">
         {/* Background Animation */}
         <div className="absolute inset-0 opacity-20">
@@ -1526,51 +1798,48 @@ const EnhancedPortfolio = () => {
             {/* Contact Methods */}
             <div className="grid md:grid-cols-3 gap-8 mb-16">
               {contactMethods.map((method, index) => (
-                <motion.a
+                <motion.div
                   key={method.type}
-                  href={method.href}
-                  target={method.type === 'whatsapp' ? '_blank' : undefined}
-                  rel={method.type === 'whatsapp' ? 'noopener noreferrer' : undefined}
                   {...fadeInUp}
                   transition={{ delay: index * 0.1 }}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 transition-all duration-300 hover:bg-white/20 group"
                 >
-                  <div className={`w-16 h-16 ${method.color} rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform`}>
-                    <method.icon size={32} className="text-white" />
-                  </div>
-                  <h3 className="font-bold text-lg mb-2">{method.label}</h3>
-                  <p className="text-blue-100 text-sm">{method.value}</p>
-                </motion.a>
+                  <ContactMethod method={method} t={t} />
+                </motion.div>
               ))}
             </div>
             
-            {/* Additional Contact Options */}
+            {/* Contact Info Cards */}
             <motion.div
               {...fadeInUp}
               transition={{ delay: 0.5 }}
               className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"
             >
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-                <h3 className="text-xl font-bold mb-4">Disponibilité</h3>
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Clock size={20} />
+                  {t.contact.availability}
+                </h3>
                 <div className="space-y-3 text-left">
                   <div className="flex items-center gap-3">
                     <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span>Disponible pour nouveaux projets</span>
+                    <span>{t.contact.newProjects}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Clock size={16} />
-                    <span>Réponse sous 24h</span>
+                    <span>{t.contact.response}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <Globe size={16} />
-                    <span>Travail à distance possible</span>
+                    <span>{t.contact.remote}</span>
                   </div>
                 </div>
               </div>
               
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8">
-                <h3 className="text-xl font-bold mb-4">Services</h3>
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  <Settings size={20} />
+                  {t.contact.services}
+                </h3>
                 <div className="space-y-2 text-left text-sm">
                   <div>• Développement Web & Mobile</div>
                   <div>• Transformation Digitale</div>
@@ -1579,6 +1848,30 @@ const EnhancedPortfolio = () => {
                   <div>• Architecture Logicielle</div>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Quick Contact Info */}
+            <motion.div
+              {...fadeInUp}
+              transition={{ delay: 0.7 }}
+              className="mt-12 flex flex-wrap justify-center gap-6"
+            >
+              <button
+                onClick={() => copyToClipboard(personalInfo.email, 'email')}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
+              >
+                <Mail size={16} />
+                {personalInfo.email}
+                {copied === 'email' ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+              </button>
+              <button
+                onClick={() => copyToClipboard(personalInfo.phone, 'phone')}
+                className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg hover:bg-white/20 transition-colors"
+              >
+                <Phone size={16} />
+                {personalInfo.phone}
+                {copied === 'phone' ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
+              </button>
             </motion.div>
           </motion.div>
         </div>
@@ -1595,11 +1888,11 @@ const EnhancedPortfolio = () => {
                 MOMO YVAN
               </h3>
               <p className="text-gray-400 mb-4">
-                Ingénieur en Génie Logiciel passionné par l'innovation technologique en Afrique.
+                {t.footer.description}
               </p>
               <div className="flex space-x-4">
                 {[
-                  { icon: Linkedin, href: `https://${personalInfo.linkedin}` },
+                  { icon: Linkedin, href: personalInfo.linkedin },
                   { icon: Github, href: personalInfo.github },
                   { icon: Twitter, href: personalInfo.twitter },
                   { icon: Instagram, href: personalInfo.instagram }
@@ -1611,6 +1904,7 @@ const EnhancedPortfolio = () => {
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.2 }}
                     className="text-gray-400 hover:text-white transition-colors"
+                    onClick={() => trackEvent('footer_social_click', { category: 'social', label: social.href })}
                   >
                     <social.icon size={20} />
                   </motion.a>
@@ -1619,7 +1913,7 @@ const EnhancedPortfolio = () => {
             </div>
             
             <div>
-              <h4 className="font-bold mb-4">Navigation</h4>
+              <h4 className="font-bold mb-4">{t.footer.navigation}</h4>
               <div className="space-y-2">
                 {navItems.slice(0, 5).map(item => (
                   <button
@@ -1634,7 +1928,7 @@ const EnhancedPortfolio = () => {
             </div>
             
             <div>
-              <h4 className="font-bold mb-4">Services</h4>
+              <h4 className="font-bold mb-4">{t.footer.services}</h4>
               <div className="space-y-2 text-gray-400">
                 <div>Développement Web</div>
                 <div>Applications Mobile</div>
@@ -1645,7 +1939,7 @@ const EnhancedPortfolio = () => {
             </div>
             
             <div>
-              <h4 className="font-bold mb-4">Contact</h4>
+              <h4 className="font-bold mb-4">{t.footer.contact}</h4>
               <div className="space-y-2 text-gray-400">
                 <div className="flex items-center gap-2">
                   <Mail size={16} />
@@ -1665,10 +1959,10 @@ const EnhancedPortfolio = () => {
           
           <div className="border-t border-gray-800 pt-8 text-center">
             <p className="text-gray-400 mb-4">
-              © 2025 MOMO GODI YVAN. Tous droits réservés.
+              © 2025 MOMO GODI YVAN. {t.footer.rights}
             </p>
             <p className="text-sm text-gray-500">
-              Développé avec ❤️ utilisant React.js, Framer Motion & Tailwind CSS
+              {t.footer.madeWith}
             </p>
           </div>
         </div>
@@ -1705,22 +1999,22 @@ const EnhancedPortfolio = () => {
                 >
                   <X size={20} />
                 </button>
-              </div>
-              
-              <div className="p-8">
-                <div className="flex flex-wrap gap-2 mb-4">
+                <div className="absolute bottom-4 left-4 flex gap-2">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    selectedProject.status === 'En développement' ? 'bg-yellow-100 text-yellow-800' :
-                    selectedProject.status === 'Terminé' ? 'bg-green-100 text-green-800' :
-                    'bg-blue-100 text-blue-800'
+                    selectedProject.status === 'En développement' ? 'bg-yellow-500/90 text-white' :
+                    selectedProject.status === 'Terminé' ? 'bg-green-500/90 text-white' :
+                    selectedProject.status === 'Production' ? 'bg-blue-500/90 text-white' :
+                    'bg-gray-500/90 text-white'
                   }`}>
                     {selectedProject.status}
                   </span>
-                  <span className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm font-medium">
+                  <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-medium">
                     {selectedProject.category}
                   </span>
                 </div>
-                
+              </div>
+              
+              <div className="p-8">
                 <h2 className={`text-3xl font-bold mb-4 ${
                   theme === 'dark' ? 'text-white' : 'text-gray-900'
                 }`}>
@@ -1738,7 +2032,7 @@ const EnhancedPortfolio = () => {
                     <h3 className={`text-xl font-semibold mb-4 ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
                     }`}>
-                      Technologies utilisées
+                      {t.projects.technologies}
                     </h3>
                     <div className="flex flex-wrap gap-2">
                       {selectedProject.tech.map((tech, idx) => (
@@ -1756,10 +2050,10 @@ const EnhancedPortfolio = () => {
                     <h3 className={`text-xl font-semibold mb-4 ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
                     }`}>
-                      Fonctionnalités clés
+                      {t.projects.features}
                     </h3>
                     <ul className="space-y-2">
-                      {selectedProject.features.slice(0, 4).map((feature, idx) => (
+                      {selectedProject.features.slice(0, 6).map((feature, idx) => (
                         <li key={idx} className={`flex items-start gap-2 ${
                           theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
                         }`}>
@@ -1771,22 +2065,56 @@ const EnhancedPortfolio = () => {
                   </div>
                 </div>
                 
-                {selectedProject.images.length > 1 && (
+                {selectedProject.highlights && (
                   <div className="mb-8">
                     <h3 className={`text-xl font-semibold mb-4 ${
                       theme === 'dark' ? 'text-white' : 'text-gray-900'
                     }`}>
-                      Captures d'écran
+                      Points forts
                     </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {selectedProject.images.slice(1).map((image, idx) => (
-                        <img
+                    <div className="grid gap-4">
+                      {selectedProject.highlights.map((highlight, idx) => (
+                        <div 
                           key={idx}
-                          src={image}
-                          alt={`${selectedProject.title} screenshot ${idx + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
+                          className={`p-4 rounded-lg border-l-4 border-primary-500 ${
+                            theme === 'dark' ? 'bg-gray-700/50' : 'bg-primary-50'
+                          }`}
+                        >
+                          <p className={`text-sm ${
+                            theme === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                          }`}>
+                            {highlight}
+                          </p>
+                        </div>
                       ))}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedProject.progress && (
+                  <div className="mb-8">
+                    <h3 className={`text-xl font-semibold mb-4 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      {t.projects.progress}
+                    </h3>
+                    <div className="flex justify-between text-sm mb-2">
+                      <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>
+                        Avancement du projet
+                      </span>
+                      <span className="text-primary-600 font-medium">
+                        {selectedProject.progress}%
+                      </span>
+                    </div>
+                    <div className={`w-full h-3 rounded-full ${
+                      theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                    }`}>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${selectedProject.progress}%` }}
+                        transition={{ duration: 1.5, ease: "easeOut" }}
+                        className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full"
+                      />
                     </div>
                   </div>
                 )}
@@ -1798,9 +2126,13 @@ const EnhancedPortfolio = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 bg-gray-800 text-white px-6 py-3 rounded-lg font-medium hover:bg-gray-900 transition-colors"
+                      onClick={() => trackEvent('project_github_click', { 
+                        category: 'external_link', 
+                        label: selectedProject.title 
+                      })}
                     >
                       <Github size={20} />
-                      Voir le code
+                      {t.projects.viewCode}
                     </a>
                   )}
                   {selectedProject.demo && (
@@ -1809,9 +2141,13 @@ const EnhancedPortfolio = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-center gap-2 bg-primary-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors"
+                      onClick={() => trackEvent('project_demo_click', { 
+                        category: 'external_link', 
+                        label: selectedProject.title 
+                      })}
                     >
                       <ExternalLink size={20} />
-                      Voir la démo
+                      {t.projects.viewDemo}
                     </a>
                   )}
                 </div>
@@ -1820,18 +2156,118 @@ const EnhancedPortfolio = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Scroll to Top Button */}
+      <motion.button
+        initial={{ opacity: 0, scale: 0 }}
+        animate={{ 
+          opacity: scrollYProgress.get() > 0.2 ? 1 : 0,
+          scale: scrollYProgress.get() > 0.2 ? 1 : 0
+        }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        className="fixed bottom-8 right-8 p-3 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700 transition-colors z-40"
+      >
+        <ArrowRight size={20} className="rotate-[-90deg]" />
+      </motion.button>
+
+      {/* Loading States */}
+      <Suspense fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          <LoadingSpinner size="lg" />
+        </div>
+      }>
+        {/* Lazy loaded components will be rendered here when needed */}
+      </Suspense>
     </div>
   );
 };
 
-// Main App Component
+// Main App Component with Providers
 const Portfolio = () => {
+  // Initialize analytics on mount
+  useEffect(() => {
+    // Google Analytics 4
+    if (typeof window !== 'undefined') {
+      const script1 = document.createElement('script');
+      script1.async = true;
+      script1.src = 'https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID';
+      document.head.appendChild(script1);
+
+      const script2 = document.createElement('script');
+      script2.innerHTML = `
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'GA_MEASUREMENT_ID', {
+          page_title: document.title,
+          page_location: window.location.href,
+          anonymize_ip: true,
+          allow_google_signals: false,
+          allow_ad_personalization_signals: false
+        });
+      `;
+      document.head.appendChild(script2);
+
+      // Initialize PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registered: ', registration);
+          })
+          .catch((registrationError) => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      }
+
+      // Performance tracking
+      if ('web-vitals' in window) {
+        import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+          getCLS((metric) => {
+            if (typeof gtag !== 'undefined') {
+              gtag('event', 'web_vitals', {
+                event_category: 'performance',
+                event_label: 'CLS',
+                value: Math.round(metric.value * 1000)
+              });
+            }
+          });
+          
+          getFID((metric) => {
+            if (typeof gtag !== 'undefined') {
+              gtag('event', 'web_vitals', {
+                event_category: 'performance',
+                event_label: 'FID',
+                value: Math.round(metric.value)
+              });
+            }
+          });
+        });
+      }
+
+      return () => {
+        // Cleanup scripts on unmount
+        try {
+          document.head.removeChild(script1);
+          document.head.removeChild(script2);
+        } catch (e) {
+          // Scripts may not exist or already removed
+        }
+      };
+    }
+  }, []);
+
   return (
-    <ThemeProvider>
-      <LanguageProvider>
-        <EnhancedPortfolio />
-      </LanguageProvider>
-    </ThemeProvider>
+    <AnalyticsProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <div className="App">
+            <EnhancedPortfolio />
+          </div>
+        </LanguageProvider>
+      </ThemeProvider>
+    </AnalyticsProvider>
   );
 };
 
