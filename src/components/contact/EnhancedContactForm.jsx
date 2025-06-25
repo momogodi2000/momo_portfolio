@@ -6,7 +6,7 @@ import {
   MapPin, Calendar, Clock, ExternalLink, Copy, Check, Smartphone,
   Globe, Zap, Shield, HeartHandshake, Briefcase, GraduationCap
 } from 'lucide-react';
-import { useAnalytics } from '../utils/analytics';
+import { useAnalytics } from '../../utils/analytics';
 
 const EnhancedContactForm = () => {
   const [formData, setFormData] = useState({

@@ -1,5 +1,5 @@
 // src/components/3d/ThreeDComponents.jsx
-import React, { Suspense, useRef, useMemo } from 'react';
+import React, { Suspense, useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame, extend } from '@react-three/fiber';
 import { OrbitControls, Text, Float, MeshDistortMaterial, Sphere, Box } from '@react-three/drei';
 import { motion } from 'framer-motion';
@@ -226,7 +226,7 @@ export const MagneticButton = ({ children, className = "", ...props }) => {
   );
 };
 
-// Particle System Component
+// Particle System Component - FIXED VERSION
 export const ParticleSystem = ({ count = 50, colors = ["#3b82f6", "#10b981", "#f59e0b"] }) => {
   const particles = useMemo(() => {
     return Array.from({ length: count }, (_, i) => ({
@@ -245,13 +245,21 @@ export const ParticleSystem = ({ count = 50, colors = ["#3b82f6", "#10b981", "#f
 
   useEffect(() => {
     const animateParticles = () => {
-      setParticlePositions(prev => prev.map(particle => ({
-        ...particle,
-        x: particle.x + particle.vx,
-        y: particle.y + particle.vy,
-        x: particle.x > window.innerWidth ? 0 : particle.x < 0 ? window.innerWidth : particle.x,
-        y: particle.y > window.innerHeight ? 0 : particle.y < 0 ? window.innerHeight : particle.y
-      })));
+      setParticlePositions(prev => prev.map(particle => {
+        // Calculate new positions
+        const newX = particle.x + particle.vx;
+        const newY = particle.y + particle.vy;
+        
+        // Apply boundary wrapping
+        const wrappedX = newX > window.innerWidth ? 0 : newX < 0 ? window.innerWidth : newX;
+        const wrappedY = newY > window.innerHeight ? 0 : newY < 0 ? window.innerHeight : newY;
+        
+        return {
+          ...particle,
+          x: wrappedX,
+          y: wrappedY
+        };
+      }));
     };
 
     const interval = setInterval(animateParticles, 50);

@@ -10,7 +10,7 @@ import {
   Facebook, Twitter, Linkedin, Copy, Check, ExternalLink,
   TrendingUp, User, Globe, Bookmark, Download, Print
 } from 'lucide-react';
-import { useAnalytics } from '../utils/analytics';
+import { useAnalytics } from '../../utils/analytics';
 
 // Blog Post Card Component
 export const BlogPostCard = ({ post, featured = false, compact = false }) => {

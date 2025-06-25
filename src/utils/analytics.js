@@ -1,16 +1,16 @@
 // src/utils/analytics.js
 
 // Google Analytics 4 Configuration
-export const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Replace with your actual GA4 ID
+let GA_MEASUREMENT_ID = 'G-XXXXXXXXXX'; // Changed from const to let
 
 // Initialize Google Analytics
-export const initGA = () => {
+export const initGA = (measurementId = GA_MEASUREMENT_ID) => {
   if (typeof window === 'undefined') return;
 
   // Load Google Analytics script
   const script1 = document.createElement('script');
   script1.async = true;
-  script1.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+  script1.src = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`;
   document.head.appendChild(script1);
 
   // Initialize gtag
@@ -21,13 +21,16 @@ export const initGA = () => {
   window.gtag = gtag;
   
   gtag('js', new Date());
-  gtag('config', GA_MEASUREMENT_ID, {
+  gtag('config', measurementId, {
     page_title: document.title,
     page_location: window.location.href,
     anonymize_ip: true,
     allow_google_signals: false,
     allow_ad_personalization_signals: false
   });
+
+  // Update the global variable
+  GA_MEASUREMENT_ID = measurementId;
 };
 
 // Track page views
@@ -316,8 +319,7 @@ export const trackSocialShare = (platform, content) => {
 export const initAllAnalytics = (config = {}) => {
   // Google Analytics
   if (config.ga4Id) {
-    GA_MEASUREMENT_ID = config.ga4Id;
-    initGA();
+    initGA(config.ga4Id); // Pass the ID directly to initGA
     trackPerformance();
     trackUserEngagement();
   }
@@ -379,3 +381,6 @@ export const useAnalytics = () => {
     trackSocialShare
   };
 };
+
+// Export the current measurement ID getter
+export const getCurrentGA4Id = () => GA_MEASUREMENT_ID;

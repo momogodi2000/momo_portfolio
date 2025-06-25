@@ -8,7 +8,7 @@ import {
   ExternalLink, Copy, Check, Facebook, Twitter, Linkedin,
   Image as ImageIcon, Video, Camera, Folder, Star, Clock
 } from 'lucide-react';
-import { useAnalytics } from '../utils/analytics';
+import { useAnalytics } from '../../utils/analytics';
 
 // Gallery data structure
 const galleryItems = [
