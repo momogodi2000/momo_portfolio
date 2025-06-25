@@ -1,10 +1,14 @@
+// src/App.jsx
 import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.jsx'
+import PortfolioApp from './components/Portfolio' // Import the wrapped App component
 import './index.css'
 
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+function App() {
+  return (
+    <div className="App">
+      <PortfolioApp />
+    </div>
+  )
+}
+
+export default App

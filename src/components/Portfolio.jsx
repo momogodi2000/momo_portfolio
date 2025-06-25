@@ -1,3 +1,4 @@
+// src/components/Portfolio.jsx
 import React, { useState, useEffect, useContext, createContext, Suspense, lazy } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform, useSpring } from 'framer-motion';
 import { 
@@ -13,12 +14,22 @@ import {
   Copy, Check, Wifi, WifiOff, Loader2, Settings, Bell, Home
 } from 'lucide-react';
 
-// Lazy load components
-const EnhancedContactForm = lazy(() => import('./contact/EnhancedContactForm'));
-const Gallery = lazy(() => import('./gallery/GalleryComponents'));
-const BlogSection = lazy(() => import('./blog/BlogComponents'));
-const ThreeDScene = lazy(() => import('./3d/ThreeDComponents'));
-const SEOHead = lazy(() => import('./SEO/SEOHead'));
+// Lazy load components with fallbacks
+const EnhancedContactForm = lazy(() => 
+  import('./contact/EnhancedContactForm').catch(() => ({ default: () => <div>Contact form not available</div> }))
+);
+const Gallery = lazy(() => 
+  import('./gallery/GalleryComponents').catch(() => ({ default: () => <div>Gallery not available</div> }))
+);
+const BlogSection = lazy(() => 
+  import('./blog/BlogComponents').catch(() => ({ default: () => <div>Blog not available</div> }))
+);
+const ThreeDScene = lazy(() => 
+  import('./3d/ThreeDComponents').catch(() => ({ default: () => <div>3D Scene not available</div> }))
+);
+const SEOHead = lazy(() => 
+  import('./SEO/SEOHead').catch(() => ({ default: () => null }))
+);
 
 // Context providers
 const ThemeContext = createContext();
@@ -42,8 +53,9 @@ const ThemeProvider = ({ children }) => {
     localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
     
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'theme_change', {
+    // Analytics tracking
+    if (typeof window.gtag !== 'undefined') {
+      window.gtag('event', 'theme_change', {
         event_category: 'user_preference',
         from_theme: theme,
         to_theme: newTheme
@@ -80,8 +92,9 @@ const LanguageProvider = ({ children }) => {
     localStorage.setItem('language', lang);
     document.documentElement.lang = lang;
     
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'language_change', {
+    // Analytics tracking
+    if (typeof window.gtag !== 'undefined') {
+      window.gtag('event', 'language_change', {
         event_category: 'user_preference',
         from_language: oldLang,
         to_language: lang
@@ -98,7 +111,7 @@ const LanguageProvider = ({ children }) => {
 
 // Analytics Provider
 const AnalyticsProvider = ({ children }) => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [installPrompt, setInstallPrompt] = useState(null);
 
   useEffect(() => {
@@ -115,8 +128,9 @@ const AnalyticsProvider = ({ children }) => {
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    if (typeof gtag !== 'undefined') {
-      gtag('config', 'GA_MEASUREMENT_ID', {
+    // Initialize Google Analytics if available
+    if (typeof window.gtag !== 'undefined') {
+      window.gtag('config', 'GA_MEASUREMENT_ID', {
         page_title: document.title,
         page_location: window.location.href
       });
@@ -130,8 +144,8 @@ const AnalyticsProvider = ({ children }) => {
   }, []);
 
   const trackEvent = (eventName, parameters = {}) => {
-    if (typeof gtag !== 'undefined') {
-      gtag('event', eventName, {
+    if (typeof window.gtag !== 'undefined') {
+      window.gtag('event', eventName, {
         event_category: parameters.category || 'engagement',
         event_label: parameters.label || '',
         value: parameters.value || 0,
@@ -180,14 +194,31 @@ const useAnalytics = () => {
   return context;
 };
 
+// Animation variants
+const fadeInUp = {
+  initial: { opacity: 0, y: 60 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true },
+  transition: { duration: 0.6 }
+};
+
+const stagger = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
 // Main Portfolio Component
-const EnhancedPortfolio = () => {
+const Portfolio = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [projectFilter, setProjectFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
   const [copied, setCopied] = useState('');
+  const [scrollY, setScrollY] = useState(0);
   
   const { theme, toggleTheme } = useTheme();
   const { language, changeLanguage } = useLanguage();
@@ -201,63 +232,130 @@ const EnhancedPortfolio = () => {
     { id: 'home', label: 'Accueil', icon: Home },
     { id: 'about', label: 'À Propos', icon: Users },
     { id: 'skills', label: 'Compétences', icon: Code },
+    { id: 'experience', label: 'Expérience', icon: Briefcase },
     { id: 'projects', label: 'Projets', icon: Rocket },
     { id: 'blog', label: 'Blog', icon: BookOpen },
-    { id: 'gallery', label: 'Galerie', icon: Image },
-    { id: 'contact', label: 'Contact', icon: MessageCircle }
+    { id: 'gallery', label: 'Galerie', icon: Camera },
+    { id: 'contact', label: 'Contact', icon: Mail }
   ];
 
-  // Animation variants
-  const fadeInUp = {
-    initial: { opacity: 0, y: 60 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6, ease: "easeOut" }
-  };
-
-  const stagger = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
+  // Personal info
+  const personalInfo = {
+    name: "MOMO GODI YVAN",
+    title: "Développeur Full Stack & Expert en Transformation Digitale",
+    email: "yvangodimomo@gmail.com",
+    phone: "+237695922065",
+    location: "Yaoundé, Cameroun",
+    bio: "Passionné par l'innovation technologique et la transformation digitale, je crée des solutions robustes qui transforment les idées en réalités numériques performantes.",
+    social: {
+      linkedin: "https://linkedin.com/in/momo-godi-yvan-206642244",
+      github: "https://github.com/momogodi2000",
+      instagram: "https://instagram.com/momo_yvan24",
+      twitter: "https://twitter.com/momoyvan"
     }
   };
 
-  // Utility functions
-  const scrollToSection = (sectionId) => {
-    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
-    setActiveSection(sectionId);
-    setIsMenuOpen(false);
-    trackEvent('section_view', {
-      category: 'navigation',
-      label: sectionId
-    });
+  // Skills data
+  const skills = {
+    frontend: [
+      { name: "React.js", level: 95, icon: "⚛️" },
+      { name: "Vue.js", level: 85, icon: "💚" },
+      { name: "JavaScript", level: 90, icon: "🟨" },
+      { name: "TypeScript", level: 80, icon: "🔷" },
+      { name: "Tailwind CSS", level: 92, icon: "🎨" },
+      { name: "HTML5/CSS3", level: 95, icon: "🌐" }
+    ],
+    backend: [
+      { name: "Django", level: 88, icon: "🐍" },
+      { name: "Node.js", level: 85, icon: "💚" },
+      { name: "Python", level: 90, icon: "🐍" },
+      { name: "PHP", level: 75, icon: "🐘" },
+      { name: "PostgreSQL", level: 85, icon: "🐘" },
+      { name: "MongoDB", level: 80, icon: "🍃" }
+    ],
+    mobile: [
+      { name: "Flutter", level: 88, icon: "📱" },
+      { name: "React Native", level: 82, icon: "⚛️" },
+      { name: "Android Studio", level: 75, icon: "🤖" },
+      { name: "Kotlin", level: 70, icon: "🎯" }
+    ],
+    tools: [
+      { name: "Git/GitHub", level: 90, icon: "🔧" },
+      { name: "Docker", level: 85, icon: "🐳" },
+      { name: "AWS", level: 80, icon: "☁️" },
+      { name: "Firebase", level: 85, icon: "🔥" },
+      { name: "Figma", level: 75, icon: "🎨" },
+      { name: "Postman", level: 88, icon: "📮" }
+    ]
   };
 
-  const copyToClipboard = async (text, type) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(type);
-      setTimeout(() => setCopied(''), 2000);
-      trackEvent('copy_contact', { category: 'interaction', label: type });
-    } catch (err) {
-      console.error('Failed to copy:', err);
+  // Projects data
+  const projects = [
+    {
+      id: 1,
+      title: "Système de Gestion Hospitalière",
+      description: "Plateforme complète pour la gestion des hôpitaux avec modules patients, médecins, et facturation.",
+      image: "/api/placeholder/400/250",
+      tech: ["Django", "React", "PostgreSQL", "WebSocket"],
+      category: "Web Platform",
+      link: "https://github.com/momogodi2000",
+      demo: "https://demo-hospital.com",
+      status: "completed"
+    },
+    {
+      id: 2,
+      title: "Application E-commerce Mobile",
+      description: "App mobile complète avec paiement mobile money, catalogue produits et système de livraison.",
+      image: "/api/placeholder/400/250",
+      tech: ["Flutter", "Firebase", "Stripe", "Node.js"],
+      category: "Mobile App",
+      link: "https://github.com/momogodi2000",
+      demo: "https://play.google.com",
+      status: "completed"
+    },
+    {
+      id: 3,
+      title: "Plateforme de Formation en Ligne",
+      description: "LMS moderne avec cours vidéo, quiz interactifs et certificats.",
+      image: "/api/placeholder/400/250",
+      tech: ["Vue.js", "Django", "WebRTC", "Redis"],
+      category: "E-commerce",
+      link: "https://github.com/momogodi2000",
+      demo: "https://demo-learning.com",
+      status: "in-progress"
     }
+  ];
+
+  // Copy to clipboard function
+  const copyToClipboard = (text, type) => {
+    navigator.clipboard.writeText(text);
+    setCopied(type);
+    setTimeout(() => setCopied(''), 2000);
   };
 
-  // Intersection Observer for active section
+  // Scroll handler
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setActiveSection(entry.target.id);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
+    const handleScroll = () => setScrollY(window.scrollY);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    navItems.forEach((item) => {
+  // Section observer
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.3,
+      rootMargin: '-50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          setActiveSection(entry.target.id);
+        }
+      });
+    }, observerOptions);
+
+    navItems.forEach(item => {
       const element = document.getElementById(item.id);
       if (element) observer.observe(element);
     });
@@ -268,420 +366,490 @@ const EnhancedPortfolio = () => {
   return (
     <>
       <Suspense fallback={null}>
-        <SEOHead 
-          title="MOMO GODI YVAN - Portfolio Professionnel"
-          description="Ingénieur en Génie Logiciel spécialisé en développement web et mobile, expert en transformation digitale au Cameroun."
-          keywords="développeur web, ingénieur logiciel, React, Django, Laravel, Flutter, Cameroun, Yaoundé, transformation digitale"
-        />
+        <SEOHead />
       </Suspense>
 
       <div className={`min-h-screen transition-colors duration-300 ${
-        theme === 'dark' 
-          ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white' 
-          : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-gray-900'
+        theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
       }`}>
+        
         {/* Navigation */}
-        <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
-          theme === 'dark' 
-            ? 'bg-gray-900/90 backdrop-blur-md border-b border-gray-700/50' 
-            : 'bg-white/90 backdrop-blur-md border-b border-gray-200/50'
-        }`}>
+        <motion.nav
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            scrollY > 50 
+              ? theme === 'dark' 
+                ? 'bg-gray-900/95 backdrop-blur-md shadow-lg' 
+                : 'bg-white/95 backdrop-blur-md shadow-lg'
+              : 'bg-transparent'
+          }`}
+        >
           <div className="container mx-auto px-4">
-            <div className="flex justify-between items-center py-4">
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center space-x-4"
+            <div className="flex items-center justify-between h-16">
+              {/* Logo */}
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="flex items-center space-x-2"
               >
-                <div className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
-                  MOMO YVAN
+                <div className="w-10 h-10 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">MG</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={toggleTheme}
-                    className={`p-2 rounded-lg transition-colors ${
-                      theme === 'dark' 
-                        ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                  </button>
-                  <div className="relative">
-                    <select
-                      value={language}
-                      onChange={(e) => changeLanguage(e.target.value)}
-                      className={`p-2 rounded-lg border-none outline-none transition-colors ${
-                        theme === 'dark' 
-                          ? 'bg-gray-800 text-white' 
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      <option value="fr">🇫🇷 FR</option>
-                      <option value="en">🇬🇧 EN</option>
-                    </select>
-                  </div>
-                </div>
+                <span className="font-bold text-xl">MOMO GODI</span>
               </motion.div>
-              
+
               {/* Desktop Navigation */}
-              <div className="hidden lg:flex space-x-8">
+              <div className="hidden md:flex items-center space-x-8">
                 {navItems.map((item) => (
-                  <button
+                  <motion.a
                     key={item.id}
-                    onClick={() => scrollToSection(item.id)}
-                    className={`flex items-center gap-2 transition-colors duration-200 ${
-                      activeSection === item.id 
-                        ? 'text-primary-600 font-medium' 
-                        : theme === 'dark' 
-                          ? 'text-gray-300 hover:text-primary-400' 
-                          : 'text-gray-600 hover:text-primary-600'
+                    href={`#${item.id}`}
+                    whileHover={{ y: -2 }}
+                    className={`flex items-center space-x-1 px-3 py-2 rounded-lg transition-colors ${
+                      activeSection === item.id
+                        ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                        : theme === 'dark'
+                        ? 'text-gray-300 hover:text-primary-400'
+                        : 'text-gray-600 hover:text-primary-600'
                     }`}
+                    onClick={() => trackEvent('nav_click', { section: item.id })}
                   >
                     <item.icon size={18} />
-                    {item.label}
-                  </button>
+                    <span>{item.label}</span>
+                  </motion.a>
                 ))}
               </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                className="lg:hidden p-2"
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              {/* Theme Toggle & Language Switcher */}
+              <div className="flex items-center space-x-4">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={toggleTheme}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark' 
+                      ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => changeLanguage(language === 'fr' ? 'en' : 'fr')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    theme === 'dark' 
+                      ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' 
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  <Languages size={20} />
+                </motion.button>
+
+                {/* Mobile menu button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="md:hidden p-2 rounded-lg"
+                >
+                  {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                </motion.button>
+              </div>
+            </div>
+          </div>
+        </motion.nav>
+
+        {/* Mobile Navigation */}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              className={`fixed top-16 right-0 h-screen w-80 z-40 ${
+                theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+              } shadow-xl`}
+            >
+              <div className="p-6">
+                {navItems.map((item, index) => (
+                  <motion.a
+                    key={item.id}
+                    href={`#${item.id}`}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      trackEvent('mobile_nav_click', { section: item.id });
+                    }}
+                    className={`flex items-center space-x-3 p-3 rounded-lg mb-2 transition-colors ${
+                      activeSection === item.id
+                        ? 'text-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                        : theme === 'dark'
+                        ? 'text-gray-300 hover:text-primary-400 hover:bg-gray-800'
+                        : 'text-gray-600 hover:text-primary-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <item.icon size={20} />
+                    <span>{item.label}</span>
+                  </motion.a>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Hero Section */}
+        <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+          {/* Background Animation */}
+          <motion.div
+            style={{ y: backgroundY }}
+            className="absolute inset-0 bg-gradient-to-br from-primary-50 via-accent-50 to-primary-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-800"
+          />
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <motion.div
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.8 }}
+                className="text-center lg:text-left"
               >
-                {isMenuOpen ? <X /> : <Menu />}
-              </button>
+                <motion.h1
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2, duration: 0.8 }}
+                  className="text-4xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent"
+                >
+                  {personalInfo.name}
+                </motion.h1>
+                
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.8 }}
+                  className="text-xl lg:text-2xl text-gray-600 dark:text-gray-300 mb-8"
+                >
+                  {personalInfo.title}
+                </motion.p>
+                
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6, duration: 0.8 }}
+                  className="text-lg text-gray-500 dark:text-gray-400 mb-8 max-w-2xl"
+                >
+                  {personalInfo.bio}
+                </motion.p>
+
+                {/* CTA Buttons */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8, duration: 0.8 }}
+                  className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+                >
+                  <motion.a
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    href="#contact"
+                    className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-primary-600 to-accent-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all"
+                    onClick={() => trackEvent('cta_click', { type: 'contact' })}
+                  >
+                    <Mail className="mr-2" size={20} />
+                    Me Contacter
+                  </motion.a>
+                  
+                  <motion.a
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                    href="#projects"
+                    className={`inline-flex items-center px-8 py-4 border-2 border-primary-600 rounded-xl font-semibold transition-all ${
+                      theme === 'dark'
+                        ? 'text-primary-400 hover:bg-primary-600 hover:text-white'
+                        : 'text-primary-600 hover:bg-primary-600 hover:text-white'
+                    }`}
+                    onClick={() => trackEvent('cta_click', { type: 'projects' })}
+                  >
+                    <Eye className="mr-2" size={20} />
+                    Voir Mes Projets
+                  </motion.a>
+                </motion.div>
+
+                {/* Social Links */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1, duration: 0.8 }}
+                  className="flex justify-center lg:justify-start space-x-6 mt-8"
+                >
+                  {Object.entries(personalInfo.social).map(([platform, url]) => (
+                    <motion.a
+                      key={platform}
+                      whileHover={{ scale: 1.2, y: -2 }}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`p-3 rounded-full transition-all ${
+                        theme === 'dark'
+                          ? 'bg-gray-800 text-gray-300 hover:text-primary-400'
+                          : 'bg-gray-100 text-gray-600 hover:text-primary-600'
+                      }`}
+                      onClick={() => trackEvent('social_click', { platform })}
+                    >
+                      {platform === 'linkedin' && <Linkedin size={24} />}
+                      {platform === 'github' && <Github size={24} />}
+                      {platform === 'instagram' && <Instagram size={24} />}
+                      {platform === 'twitter' && <Twitter size={24} />}
+                    </motion.a>
+                  ))}
+                </motion.div>
+              </motion.div>
+
+              {/* Hero Image/3D Scene */}
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 1 }}
+                className="relative"
+              >
+                <Suspense fallback={
+                  <div className="w-full h-96 bg-gradient-to-br from-primary-100 to-accent-100 dark:from-gray-700 dark:to-gray-600 rounded-2xl flex items-center justify-center">
+                    <Loader2 className="animate-spin" size={48} />
+                  </div>
+                }>
+                  <ThreeDScene />
+                </Suspense>
+              </motion.div>
             </div>
           </div>
 
-          {/* Mobile Navigation */}
-          <AnimatePresence>
-            {isMenuOpen && (
+          {/* Scroll Indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+            className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+          >
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="w-6 h-10 border-2 border-primary-400 rounded-full flex justify-center"
+            >
               <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className={`lg:hidden border-t ${
-                  theme === 'dark' ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
-                }`}
-              >
-                <div className="container mx-auto px-4 py-4">
-                  {navItems.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className={`flex items-center gap-3 w-full text-left py-3 transition-colors ${
-                        theme === 'dark' 
-                          ? 'text-gray-300 hover:text-primary-400' 
-                          : 'text-gray-600 hover:text-primary-600'
-                      }`}
+                animate={{ y: [0, 12, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="w-1 h-3 bg-primary-400 rounded-full mt-2"
+              />
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* About Section */}
+        <section id="about" className={`py-20 ${
+          theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50/80'
+        }`}>
+          <div className="container mx-auto px-4">
+            <motion.div
+              {...fadeInUp}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl font-bold mb-4">À Propos</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Découvrez mon parcours et mes passions
+              </p>
+            </motion.div>
+
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <motion.div {...fadeInUp} className="space-y-6">
+                <h3 className="text-2xl font-semibold mb-6">Mon Histoire</h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                  Diplômé en Informatique de Gestion et passionné par l'innovation technologique, 
+                  je me spécialise dans le développement d'applications web et mobiles robustes. 
+                  Mon approche combine expertise technique et vision business pour créer des solutions 
+                  qui transforment réellement les entreprises.
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
+                  Avec une expérience diversifiée dans différents secteurs (santé, e-commerce, éducation), 
+                  j'accompagne mes clients dans leur transformation digitale en proposant des solutions 
+                  sur mesure, performantes et évolutives.
+                </p>
+
+                {/* Stats */}
+                <div className="grid grid-cols-2 gap-6 mt-8">
+                  {[
+                    { number: "50+", label: "Projets Réalisés", icon: Rocket },
+                    { number: "3+", label: "Années d'Expérience", icon: Calendar },
+                    { number: "25+", label: "Clients Satisfaits", icon: Users },
+                    { number: "10+", label: "Technologies Maîtrisées", icon: Code }
+                  ].map((stat, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      className={`p-6 rounded-xl ${
+                        theme === 'dark' ? 'bg-gray-700/50' : 'bg-white'
+                      } shadow-lg text-center`}
                     >
-                      <item.icon size={18} />
-                      {item.label}
-                    </button>
+                      <div className="flex items-center justify-center mb-4">
+                        <stat.icon size={24} className="opacity-80" />
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          whileInView={{ scale: 1 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: index * 0.1 }}
+                          className="text-3xl font-bold ml-2"
+                        >
+                          {stat.number}
+                        </motion.div>
+                      </div>
+                      <div className="text-sm opacity-90 font-medium">{stat.label}</div>
+                    </motion.div>
                   ))}
                 </div>
               </motion.div>
-            )}
-          </AnimatePresence>
-        </nav>
 
-        {/* Hero Section */}
-        <section id="home" className="pt-20 pb-12 min-h-screen flex items-center relative overflow-hidden">
-          <div className="absolute inset-0 overflow-hidden">
-            {[...Array(20)].map((_, i) => (
               <motion.div
-                key={i}
-                className="absolute w-2 h-2 bg-primary-400/30 rounded-full"
-                animate={{
-                  x: [0, 100, 0],
-                  y: [0, -100, 0],
-                  opacity: [0.3, 1, 0.3]
-                }}
-                transition={{
-                  duration: 10 + i * 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`
-                }}
-              />
-            ))}
-          </div>
-
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="max-w-5xl mx-auto text-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.8 }}
-                className="mb-8"
-              >
-                <div className="relative w-40 h-40 mx-auto mb-8">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="absolute inset-0 bg-gradient-to-r from-primary-500 via-accent-500 to-purple-500 rounded-full p-1"
-                  >
-                    <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center">
-                      <span className="text-5xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
-                        MY
-                      </span>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-                    className="absolute -inset-4 border-2 border-dashed border-primary-300 rounded-full"
-                  />
-                </div>
-              </motion.div>
-
-              <motion.h1 
-                {...fadeInUp}
-                className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 bg-clip-text text-transparent"
-              >
-                MOMO GODI YVAN
-              </motion.h1>
-
-              <motion.p 
                 {...fadeInUp}
                 transition={{ delay: 0.2 }}
-                className={`text-xl md:text-2xl mb-4 leading-relaxed ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                }`}
+                className="space-y-6"
               >
-                Ingénieur en Génie Logiciel | Développeur Web & Mobile | Expert en Transformation Digitale
-              </motion.p>
-
-              <motion.p 
-                {...fadeInUp}
-                transition={{ delay: 0.3 }}
-                className={`text-lg mb-8 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                Passionné par l'innovation technologique au service du développement local camerounais
-              </motion.p>
-
-              <motion.div 
-                {...fadeInUp}
-                transition={{ delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12"
-              >
-                <motion.button 
-                  onClick={() => scrollToSection('contact')}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-primary-600 to-accent-600 hover:from-primary-700 hover:to-accent-700 text-white px-8 py-4 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-                >
-                  <Mail size={20} />
-                  Me Contacter
-                  <Sparkles size={16} className="animate-pulse" />
-                </motion.button>
-                <motion.button 
-                  onClick={() => scrollToSection('projects')}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className={`border-2 border-primary-600 text-primary-600 hover:bg-primary-600 hover:text-white px-8 py-4 rounded-lg font-medium transition-all duration-200 flex items-center gap-2`}
-                >
-                  <Rocket size={20} />
-                  Voir Mes Projets
-                </motion.button>
-              </motion.div>
-
-              <motion.div 
-                {...fadeInUp}
-                transition={{ delay: 0.6 }}
-                className={`flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-8 ${
-                  theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <MapPin size={16} />
-                  <span className="text-sm">Yaoundé, Cameroun</span>
+                <h3 className="text-2xl font-semibold mb-8">Spécialités</h3>
+                <div className="grid gap-4">
+                  {[
+                    { icon: Code, text: "Développement Web & Mobile", desc: "React, Django, Flutter" },
+                    { icon: Server, text: "Architecture Logicielle", desc: "Microservices, APIs REST" },
+                    { icon: Database, text: "Gestion de Données", desc: "PostgreSQL, MongoDB, Redis" },
+                    { icon: Cloud, text: "DevOps & Cloud", desc: "AWS, Docker, CI/CD" },
+                    { icon: Users, text: "Transformation Digitale", desc: "Stratégie, Formation, Accompagnement" },
+                    { icon: Shield, text: "Sécurité & Performance", desc: "Optimisation, Monitoring" }
+                  ].map((specialty, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ x: 10 }}
+                      className={`flex items-start gap-4 p-4 rounded-lg transition-all duration-300 cursor-pointer ${
+                        theme === 'dark' 
+                          ? 'bg-gray-700/50 hover:bg-gray-700' 
+                          : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <specialty.icon className="text-white" size={24} />
+                      </div>
+                      <div>
+                        <div className={`font-semibold ${
+                          theme === 'dark' ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          {specialty.text}
+                        </div>
+                        <div className={`text-sm ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>
+                          {specialty.desc}
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Globe size={16} />
-                  <span className="text-sm">Disponible Mondialement</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm text-green-500">En ligne</span>
-                </div>
-              </motion.div>
-
-              {/* Social Links */}
-              <motion.div
-                {...fadeInUp}
-                transition={{ delay: 0.8 }}
-                className="flex justify-center space-x-4 mt-8"
-              >
-                {[
-                  { icon: Linkedin, href: "https://linkedin.com/in/momo-godi-yvan-206642244", color: 'hover:text-blue-600' },
-                  { icon: Github, href: "https://github.com/momogodi2000", color: 'hover:text-gray-600' },
-                  { icon: Instagram, href: "https://instagram.com/momoyvan", color: 'hover:text-pink-600' },
-                  { icon: Twitter, href: "https://twitter.com/momoyvan", color: 'hover:text-blue-400' },
-                  { icon: Youtube, href: "https://youtube.com/@momoyvan", color: 'hover:text-red-600' }
-                ].map((social, index) => (
-                  <motion.a
-                    key={index}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    whileHover={{ scale: 1.2, y: -5 }}
-                    className={`p-3 rounded-full bg-white/10 backdrop-blur-sm transition-colors ${social.color}`}
-                    onClick={() => trackEvent('social_link_click', { category: 'social', label: social.href })}
-                  >
-                    <social.icon size={24} />
-                  </motion.a>
-                ))}
               </motion.div>
             </div>
           </div>
         </section>
 
-        {/* About Section */}
-        <section id="about" className={`py-20 ${
-          theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
-        } backdrop-blur-sm`}>
+        {/* Skills Section */}
+        <section id="skills" className="py-20">
           <div className="container mx-auto px-4">
             <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="max-w-6xl mx-auto"
+              {...fadeInUp}
+              className="text-center mb-16"
             >
-              <motion.div {...fadeInUp} className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
-                  À Propos de Moi
-                </h2>
-                <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Innovation • Expertise • Impact
-                </p>
-              </motion.div>
-              
-              <div className="grid lg:grid-cols-2 gap-16 items-center">
-                <motion.div
-                  {...fadeInUp}
-                  className="space-y-8"
-                >
-                  <p className={`text-lg leading-relaxed ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
-                    Ingénieur en génie logiciel diplômé de l'IAI Cameroun, parfaitement bilingue (français/anglais), spécialisé en développement web et mobile avec une approche centrée sur l'innovation et l'impact social.
-                  </p>
-                  
-                  <p className={`text-lg leading-relaxed ${
-                    theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
-                    Expert en transformation digitale avec une expérience confirmée dans la digitalisation d'organisations communautaires et la formation numérique. Professeur de Karaté Wado Ryu, je conjugue discipline martiale et excellence technologique.
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-6 mt-12">
-                    {[
-                      { number: '4+', label: 'Années d\'Expérience', icon: Calendar, color: 'from-blue-500 to-cyan-500' },
-                      { number: '15+', label: 'Projets Réalisés', icon: Rocket, color: 'from-green-500 to-emerald-500' },
-                      { number: '50+', label: 'Femmes Formées', icon: Users, color: 'from-purple-500 to-pink-500' },
-                      { number: '3', label: 'Langues Maîtrisées', icon: Languages, color: 'from-orange-500 to-red-500' }
-                    ].map((stat, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ scale: 1.05 }}
-                        className={`p-6 rounded-xl bg-gradient-to-br ${stat.color} text-white transform transition-all duration-300 cursor-pointer`}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <stat.icon size={24} className="opacity-80" />
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            whileInView={{ scale: 1 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: index * 0.1 }}
-                            className="text-3xl font-bold"
-                          >
-                            {stat.number}
-                          </motion.div>
-                        </div>
-                        <div className="text-sm opacity-90 font-medium">{stat.label}</div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  {...fadeInUp}
-                  transition={{ delay: 0.2 }}
-                  className="space-y-6"
-                >
-                  <h3 className="text-2xl font-semibold mb-8">Spécialités</h3>
-                  <div className="grid gap-4">
-                    {[
-                      { icon: Code, text: "Développement Web & Mobile", desc: "React, Django, Flutter" },
-                      { icon: Server, text: "Architecture Logicielle", desc: "Microservices, APIs REST" },
-                      { icon: Database, text: "Gestion de Données", desc: "PostgreSQL, MongoDB, Redis" },
-                      { icon: Cloud, text: "DevOps & Cloud", desc: "AWS, Docker, CI/CD" },
-                      { icon: Users, text: "Transformation Digitale", desc: "Stratégie, Formation, Accompagnement" },
-                      { icon: Shield, text: "Sécurité & Performance", desc: "Optimisation, Monitoring" }
-                    ].map((specialty, index) => (
-                      <motion.div
-                        key={index}
-                        whileHover={{ x: 10 }}
-                        className={`flex items-start gap-4 p-4 rounded-lg transition-all duration-300 cursor-pointer ${
-                          theme === 'dark' 
-                            ? 'bg-gray-700/50 hover:bg-gray-700' 
-                            : 'bg-gray-50 hover:bg-gray-100'
-                        }`}
-                      >
-                        <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <specialty.icon className="text-white" size={24} />
-                        </div>
-                        <div>
-                          <div className={`font-semibold ${
-                            theme === 'dark' ? 'text-white' : 'text-gray-900'
-                          }`}>
-                            {specialty.text}
-                          </div>
-                          <div className={`text-sm ${
-                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                          }`}>
-                            {specialty.desc}
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              </div>
+              <h2 className="text-4xl font-bold mb-4">Compétences</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Technologies et outils que je maîtrise
+              </p>
             </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {Object.entries(skills).map(([category, skillList], categoryIndex) => (
+                <motion.div
+                  key={category}
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: categoryIndex * 0.1 }}
+                  className={`p-6 rounded-xl ${
+                    theme === 'dark' ? 'bg-gray-800/50' : 'bg-white'
+                  } shadow-lg`}
+                >
+                  <h3 className="text-xl font-semibold mb-6 capitalize text-center">
+                    {category === 'frontend' ? 'Frontend' : 
+                     category === 'backend' ? 'Backend' :
+                     category === 'mobile' ? 'Mobile' : 'Outils'}
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    {skillList.map((skill, index) => (
+                      <motion.div
+                        key={skill.name}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: (categoryIndex * 0.1) + (index * 0.05) }}
+                        className="space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg">{skill.icon}</span>
+                            <span className="font-medium">{skill.name}</span>
+                          </div>
+                          <span className="text-sm text-gray-500">{skill.level}%</span>
+                        </div>
+                        <div className={`h-2 rounded-full ${
+                          theme === 'dark' ? 'bg-gray-700' : 'bg-gray-200'
+                        }`}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            whileInView={{ width: `${skill.level}%` }}
+                            viewport={{ once: true }}
+                            transition={{ delay: (categoryIndex * 0.1) + (index * 0.05) + 0.2, duration: 0.8 }}
+                            className="h-full bg-gradient-to-r from-primary-500 to-accent-500 rounded-full"
+                          />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </section>
 
         {/* Projects Section */}
         <section id="projects" className={`py-20 ${
-          theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
-        } backdrop-blur-sm`}>
+          theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-50/80'
+        }`}>
           <div className="container mx-auto px-4">
             <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="max-w-7xl mx-auto"
+              {...fadeInUp}
+              className="text-center mb-16"
             >
-              <motion.div {...fadeInUp} className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
-                  Projets & Réalisations
-                </h2>
-                <p className={`text-xl ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                  Découvrez mes dernières créations et innovations technologiques
-                </p>
-              </motion.div>
+              <h2 className="text-4xl font-bold mb-4">Projets</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Découvrez mes réalisations récentes
+              </p>
+            </motion.div>
 
+            <motion.div
+              {...fadeInUp}
+              transition={{ delay: 0.2 }}
+              className="mb-12"
+            >
               {/* Search and Filter */}
-              <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-12">
-                <div className="relative flex-1 max-w-md">
-                  <Search className={`absolute left-3 top-3 ${
+              <div className="flex flex-col md:flex-row gap-4 mb-8">
+                <div className="relative flex-1">
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 ${
                     theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
                   }`} size={20} />
                   <input
@@ -719,7 +887,90 @@ const EnhancedPortfolio = () => {
                 animate="animate"
                 className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
               >
-                {/* Project cards would be rendered here */}
+                {projects
+                  .filter(project => 
+                    projectFilter === 'All' || project.category === projectFilter
+                  )
+                  .filter(project =>
+                    project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    project.description.toLowerCase().includes(searchTerm.toLowerCase())
+                  )
+                  .map((project, index) => (
+                    <motion.div
+                      key={project.id}
+                      initial={{ opacity: 0, y: 50 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: index * 0.1 }}
+                      whileHover={{ y: -5 }}
+                      className={`rounded-xl overflow-hidden shadow-lg ${
+                        theme === 'dark' ? 'bg-gray-800' : 'bg-white'
+                      } transition-all duration-300`}
+                    >
+                      <div className="relative overflow-hidden">
+                        <img
+                          src={project.image}
+                          alt={project.title}
+                          className="w-full h-48 object-cover transition-transform duration-300 hover:scale-110"
+                        />
+                        <div className="absolute top-4 right-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            project.status === 'completed'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                          }`}>
+                            {project.status === 'completed' ? 'Terminé' : 'En cours'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="p-6">
+                        <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+                        <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                          {project.description}
+                        </p>
+                        
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {project.tech.map((tech) => (
+                            <span
+                              key={tech}
+                              className="px-2 py-1 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 text-xs rounded-md"
+                            >
+                              {tech}
+                            </span>
+                          ))}
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <motion.a
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            href={project.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-1 text-primary-600 dark:text-primary-400 hover:text-primary-700"
+                            onClick={() => trackEvent('project_link_click', { project: project.title })}
+                          >
+                            <Github size={16} />
+                            <span className="text-sm">Code</span>
+                          </motion.a>
+                          
+                          <motion.a
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            href={project.demo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center space-x-1 text-accent-600 dark:text-accent-400 hover:text-accent-700"
+                            onClick={() => trackEvent('project_demo_click', { project: project.title })}
+                          >
+                            <ExternalLink size={16} />
+                            <span className="text-sm">Demo</span>
+                          </motion.a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
               </motion.div>
             </motion.div>
           </div>
@@ -730,7 +981,22 @@ const EnhancedPortfolio = () => {
           theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50/80'
         } backdrop-blur-sm`}>
           <div className="container mx-auto px-4">
-            <Suspense fallback={<div className="text-center py-16">Chargement des articles...</div>}>
+            <motion.div
+              {...fadeInUp}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl font-bold mb-4">Blog</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Articles et réflexions sur le développement
+              </p>
+            </motion.div>
+            
+            <Suspense fallback={
+              <div className="text-center py-16">
+                <Loader2 className="animate-spin mx-auto mb-4" size={48} />
+                <p>Chargement des articles...</p>
+              </div>
+            }>
               <BlogSection />
             </Suspense>
           </div>
@@ -738,204 +1004,207 @@ const EnhancedPortfolio = () => {
 
         {/* Gallery Section */}
         <section id="gallery" className={`py-20 ${
-          theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
-        } backdrop-blur-sm`}>
+          theme === 'dark' ? 'bg-gray-800/50' : 'bg-white'
+        }`}>
           <div className="container mx-auto px-4">
-            <Suspense fallback={<div className="text-center py-16">Chargement de la galerie...</div>}>
+            <motion.div
+              {...fadeInUp}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl font-bold mb-4">Galerie</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Captures d'écran de mes projets
+              </p>
+            </motion.div>
+            
+            <Suspense fallback={
+              <div className="text-center py-16">
+                <Loader2 className="animate-spin mx-auto mb-4" size={48} />
+                <p>Chargement de la galerie...</p>
+              </div>
+            }>
               <Gallery />
             </Suspense>
           </div>
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="py-20 bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 text-white relative overflow-hidden">
-          <div className="absolute inset-0 opacity-20">
-            {[...Array(50)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="absolute w-1 h-1 bg-white rounded-full"
-                animate={{
-                  x: [0, Math.random() * 200 - 100],
-                  y: [0, Math.random() * 200 - 100],
-                  opacity: [0, 1, 0]
-                }}
-                transition={{
-                  duration: 3 + Math.random() * 2,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`
-                }}
-              />
-            ))}
-          </div>
+        <section id="contact" className={`py-20 ${
+          theme === 'dark' ? 'bg-gray-900/50' : 'bg-gray-50/80'
+        }`}>
+          <div className="container mx-auto px-4">
+            <motion.div
+              {...fadeInUp}
+              className="text-center mb-16"
+            >
+              <h2 className="text-4xl font-bold mb-4">Contact</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">
+                Démarrons votre projet ensemble
+              </p>
+            </motion.div>
 
-          <div className="container mx-auto px-4 relative z-10">
-            <Suspense fallback={<div className="text-center py-16">Chargement du formulaire...</div>}>
-              <EnhancedContactForm />
-            </Suspense>
+            <div className="grid lg:grid-cols-2 gap-12">
+              {/* Contact Info */}
+              <motion.div
+                {...fadeInUp}
+                className="space-y-8"
+              >
+                <h3 className="text-2xl font-semibold mb-6">Informations de Contact</h3>
+                
+                <div className="space-y-6">
+                  {[
+                    { icon: Mail, label: "Email", value: personalInfo.email, action: () => copyToClipboard(personalInfo.email, 'email') },
+                    { icon: Phone, label: "Téléphone", value: personalInfo.phone, action: () => copyToClipboard(personalInfo.phone, 'phone') },
+                    { icon: MapPin, label: "Localisation", value: personalInfo.location, action: null }
+                  ].map((contact, index) => (
+                    <motion.div
+                      key={index}
+                      whileHover={{ x: 5 }}
+                      onClick={contact.action}
+                      className={`flex items-center space-x-4 p-4 rounded-lg transition-all ${
+                        contact.action 
+                          ? 'cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900/20' 
+                          : ''
+                      } ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-white'}`}
+                    >
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                        <contact.icon className="text-white" size={24} />
+                      </div>
+                      <div>
+                        <div className="font-medium">{contact.label}</div>
+                        <div className="text-gray-600 dark:text-gray-400">{contact.value}</div>
+                      </div>
+                      {contact.action && (
+                        <div className="ml-auto">
+                          <Copy size={16} className="text-gray-400" />
+                        </div>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Quick Contact Buttons */}
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  <motion.a
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    href={`mailto:${personalInfo.email}`}
+                    className="flex items-center justify-center space-x-2 p-4 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    onClick={() => trackEvent('contact_click', { method: 'email' })}
+                  >
+                    <Mail size={20} />
+                    <span>Email</span>
+                  </motion.a>
+                  
+                  <motion.a
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    href={`https://wa.me/${personalInfo.phone.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center space-x-2 p-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    onClick={() => trackEvent('contact_click', { method: 'whatsapp' })}
+                  >
+                    <MessageCircle size={20} />
+                    <span>WhatsApp</span>
+                  </motion.a>
+                </div>
+              </motion.div>
+
+              {/* Contact Form */}
+              <motion.div
+                {...fadeInUp}
+                transition={{ delay: 0.2 }}
+              >
+                <Suspense fallback={
+                  <div className="text-center py-16">
+                    <Loader2 className="animate-spin mx-auto mb-4" size={48} />
+                    <p>Chargement du formulaire...</p>
+                  </div>
+                }>
+                  <EnhancedContactForm />
+                </Suspense>
+              </motion.div>
+            </div>
           </div>
         </section>
 
         {/* Footer */}
         <footer className={`py-12 ${
-          theme === 'dark' ? 'bg-gray-900' : 'bg-gray-900'
+          theme === 'dark' ? 'bg-gray-900' : 'bg-gray-800'
         } text-white`}>
           <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-4 gap-8 mb-8">
+            <div className="grid md:grid-cols-3 gap-8">
               <div>
-                <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent">
-                  MOMO YVAN
-                </h3>
+                <div className="flex items-center space-x-2 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-accent-500 rounded-lg flex items-center justify-center">
+                    <span className="text-white font-bold">MG</span>
+                  </div>
+                  <span className="font-bold text-lg">MOMO GODI</span>
+                </div>
                 <p className="text-gray-400 mb-4">
-                  Ingénieur en Génie Logiciel passionné par l'innovation technologique en Afrique.
+                  Développeur Full Stack passionné par l'innovation et la transformation digitale.
                 </p>
                 <div className="flex space-x-4">
-                  {[
-                    { icon: Linkedin, href: "https://linkedin.com/in/momo-godi-yvan-206642244" },
-                    { icon: Github, href: "https://github.com/momogodi2000" },
-                    { icon: Twitter, href: "https://twitter.com/momoyvan" },
-                    { icon: Instagram, href: "https://instagram.com/momoyvan" }
-                  ].map((social, index) => (
+                  {Object.entries(personalInfo.social).map(([platform, url]) => (
                     <motion.a
-                      key={index}
-                      href={social.href}
+                      key={platform}
+                      whileHover={{ scale: 1.2 }}
+                      href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      whileHover={{ scale: 1.2 }}
-                      className="text-gray-400 hover:text-white transition-colors"
+                      className="text-gray-400 hover:text-primary-400 transition-colors"
                     >
-                      <social.icon size={20} />
+                      {platform === 'linkedin' && <Linkedin size={20} />}
+                      {platform === 'github' && <Github size={20} />}
+                      {platform === 'instagram' && <Instagram size={20} />}
+                      {platform === 'twitter' && <Twitter size={20} />}
                     </motion.a>
                   ))}
                 </div>
               </div>
               
               <div>
-                <h4 className="font-bold mb-4">Navigation</h4>
-                <div className="space-y-2">
-                  {navItems.slice(0, 5).map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => scrollToSection(item.id)}
-                      className="block text-gray-400 hover:text-white transition-colors"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+                <h4 className="font-semibold mb-4">Services</h4>
+                <ul className="space-y-2 text-gray-400">
+                  <li>Développement Web</li>
+                  <li>Applications Mobile</li>
+                  <li>Transformation Digitale</li>
+                  <li>Consulting IT</li>
+                </ul>
               </div>
               
               <div>
-                <h4 className="font-bold mb-4">Services</h4>
-                <div className="space-y-2 text-gray-400">
-                  <div>Développement Web</div>
-                  <div>Applications Mobile</div>
-                  <div>Transformation Digitale</div>
-                  <div>Formation IT</div>
-                  <div>Consulting</div>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-bold mb-4">Contact</h4>
-                <div className="space-y-2 text-gray-400">
-                  <div className="flex items-center gap-2">
-                    <Mail size={16} />
-                    <span className="text-sm">yvangodimomo@gmail.com</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone size={16} />
-                    <span className="text-sm">+237695922065</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin size={16} className="mt-1" />
-                    <span className="text-sm">Yaoundé, Cameroun</span>
-                  </div>
-                </div>
+                <h4 className="font-semibold mb-4">Contact</h4>
+                <ul className="space-y-2 text-gray-400">
+                  <li>{personalInfo.email}</li>
+                  <li>{personalInfo.phone}</li>
+                  <li>{personalInfo.location}</li>
+                </ul>
               </div>
             </div>
             
-            <div className="border-t border-gray-800 pt-8 text-center">
-              <p className="text-gray-400 mb-4">
-                © 2025 MOMO GODI YVAN. Tous droits réservés.
-              </p>
-              <p className="text-sm text-gray-500">
-                Développé avec ❤️ utilisant React.js, Framer Motion & Tailwind CSS
-              </p>
-                       </div>
+            <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+              <p>&copy; 2024 MOMO GODI YVAN. Tous droits réservés.</p>
+            </div>
           </div>
         </footer>
 
-        {/* 3D Scene (positioned fixed) */}
-        <Suspense fallback={null}>
-          <ThreeDScene />
-        </Suspense>
-
-        {/* Install PWA Prompt */}
-        {installPrompt && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-xl z-50 max-w-xs ${
-              theme === 'dark' ? 'bg-gray-800' : 'bg-white'
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <Rocket className="text-primary-500 mt-1" size={20} />
-              <div>
-                <h4 className="font-bold mb-1">
-                  Installer l'application
-                </h4>
-                <p className={`text-sm mb-3 ${
-                  theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
-                }`}>
-                  Ajoutez ce portfolio à votre écran d'accueil pour une meilleure expérience.
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => {
-                      installPWA();
-                      trackEvent('pwa_install_dismiss');
-                    }}
-                    className="text-sm bg-primary-600 hover:bg-primary-700 text-white px-3 py-1 rounded"
-                  >
-                    Installer
-                  </button>
-                  <button
-                    onClick={() => {
-                      setInstallPrompt(null);
-                      trackEvent('pwa_install_dismiss');
-                    }}
-                    className={`text-sm px-3 py-1 rounded ${
-                      theme === 'dark' 
-                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' 
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                    }`}
-                  >
-                    Plus tard
-                  </button>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* Back to Top Button */}
+        {/* Scroll to Top Button */}
         <AnimatePresence>
-          {activeSection !== 'home' && (
+          {scrollY > 500 && (
             <motion.button
-              initial={{ opacity: 0, scale: 0.5 }}
+              initial={{ opacity: 0, scale: 0 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5 }}
+              exit={{ opacity: 0, scale: 0 }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={() => scrollToSection('home')}
-              className={`fixed bottom-6 right-6 w-12 h-12 rounded-full flex items-center justify-center shadow-lg z-40 ${
-                theme === 'dark' 
+              onClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                trackEvent('scroll_to_top');
+              }}
+              className={`fixed bottom-8 right-8 p-3 rounded-full shadow-lg z-50 transition-colors ${
+                theme === 'dark'
                   ? 'bg-primary-600 hover:bg-primary-700' 
                   : 'bg-accent-600 hover:bg-accent-700'
               } text-white transition-all`}
@@ -963,22 +1232,36 @@ const EnhancedPortfolio = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Network Status Indicator */}
+        {!isOnline && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg z-50"
+          >
+            <div className="flex items-center space-x-2">
+              <WifiOff size={16} />
+              <span>Mode hors ligne</span>
+            </div>
+          </motion.div>
+        )}
       </div>
     </>
   );
 };
 
 // App Wrapper with Providers
-const App = () => {
+const PortfolioWithProviders = () => {
   return (
     <ThemeProvider>
       <LanguageProvider>
         <AnalyticsProvider>
-          <EnhancedPortfolio />
+          <Portfolio />
         </AnalyticsProvider>
       </LanguageProvider>
     </ThemeProvider>
   );
 };
 
-export default App;
+export default PortfolioWithProviders;
