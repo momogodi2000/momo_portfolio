@@ -1,92 +1,127 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import {
   Calendar, Clock, Eye, Heart, Share2, ArrowRight,
   BookOpen, Filter, Search, Facebook, Twitter, Linkedin, 
   Copy, Check, User, ArrowLeft, Sun, Moon, Wifi, WifiOff,
-  Sparkles, Send, CheckCircle2, AlertCircle, Star, Tag
+  Sparkles, Send, CheckCircle2, AlertCircle, Star, Tag,
+  FileText, Download, ExternalLink, TrendingUp, MessageCircle,
+  Users, Award, Globe
 } from 'lucide-react';
 
-// Simple blog posts data
+// Enhanced blog posts data with local PDF links
 const blogPosts = [
   {
     id: 1,
     title: "L'avenir du développement web en Afrique : Opportunités et défis",
     slug: "avenir-developpement-web-afrique",
-    excerpt: "Analyse des tendances actuelles et des perspectives d'avenir pour le développement web sur le continent africain, avec un focus sur les technologies émergentes.",
+    excerpt: "Analyse approfondie des tendances actuelles et des perspectives d'avenir pour le développement web sur le continent africain. Ce document examine les technologies émergentes, les défis infrastructurels, et les opportunités d'innovation dans l'écosystème tech africain.",
+    fullDescription: "Une étude complète sur l'état actuel et les perspectives du développement web en Afrique, incluant une analyse des marchés émergents, des solutions mobiles innovantes, et des stratégies d'adaptation aux contraintes locales.",
     author: "MOMO GODI YVAN",
     date: '2025-01-20',
-    readTime: 8,
+    readTime: 15,
     category: 'Développement Web',
-    tags: ['Afrique', 'Développement Web', 'Innovation', 'Mobile First'],
-    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23dbeafe'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%231d4ed8' font-size='20' font-family='Arial'%3EDéveloppement Web Afrique%3C/text%3E%3C/svg%3E",
+    tags: ['Afrique', 'Développement Web', 'Innovation', 'Mobile First', 'Technologie'],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='grad1' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%234f46e5;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%237c3aed;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='400' fill='url(%23grad1)'/%3E%3Ctext x='400' y='180' text-anchor='middle' fill='white' font-size='28' font-weight='bold' font-family='Arial'%3EDéveloppement Web%3C/text%3E%3Ctext x='400' y='220' text-anchor='middle' fill='white' font-size='24' font-family='Arial'%3EAfrique 2025%3C/text%3E%3C/svg%3E",
     featured: true,
-    views: 1250,
-    likes: 89
+    views: 2150,
+    likes: 147,
+    comments: 23,
+    pdfPath: "/articles/L'avenir du développement web en Afrique _ Opportunités et défis.pdf",
+    difficulty: "Intermédiaire",
+    estimatedWords: 3500
   },
   {
     id: 2,
     title: "Guide complet : Créer une Progressive Web App avec React",
     slug: "guide-pwa-react",
-    excerpt: "Tutoriel détaillé pour développer une PWA performante avec React, incluant les service workers et les notifications push.",
+    excerpt: "Tutoriel détaillé et pratique pour développer une PWA performante avec React. Incluant la configuration des service workers, l'optimisation des performances, les notifications push, et les meilleures pratiques pour une expérience utilisateur native.",
+    fullDescription: "Un guide technique complet couvrant tous les aspects du développement PWA avec React, de la configuration initiale aux techniques avancées d'optimisation et de déploiement.",
     author: "MOMO GODI YVAN",
     date: '2025-01-15',
-    readTime: 12,
+    readTime: 25,
     category: 'Tutoriel',
-    tags: ['React', 'PWA', 'JavaScript', 'Mobile'],
-    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23dcfce7'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%23166534' font-size='20' font-family='Arial'%3EPWA avec React%3C/text%3E%3C/svg%3E",
+    tags: ['React', 'PWA', 'JavaScript', 'Mobile', 'Performance', 'Service Workers'],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='grad2' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%2306b6d4;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%230891b2;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='400' fill='url(%23grad2)'/%3E%3Ctext x='400' y='180' text-anchor='middle' fill='white' font-size='28' font-weight='bold' font-family='Arial'%3EPWA avec React%3C/text%3E%3Ctext x='400' y='220' text-anchor='middle' fill='white' font-size='20' font-family='Arial'%3EGuide Complet%3C/text%3E%3C/svg%3E",
     featured: false,
-    views: 890,
-    likes: 67
+    views: 1890,
+    likes: 134,
+    comments: 45,
+    pdfPath: "/articles/guide-pwa-react.pdf",
+    difficulty: "Avancé",
+    estimatedWords: 5200
   },
   {
     id: 3,
     title: "Intelligence Artificielle et développement : L'IA va-t-elle remplacer les développeurs ?",
     slug: "ia-developpeurs-avenir",
-    excerpt: "Analyse approfondie de l'impact de l'IA sur le métier de développeur et l'évolution nécessaire des compétences.",
+    excerpt: "Analyse critique et prospective de l'impact de l'intelligence artificielle sur le métier de développeur. Exploration des outils IA actuels, de leur intégration dans les workflows, et réflexion sur l'évolution nécessaire des compétences techniques et humaines.",
+    fullDescription: "Une réflexion approfondie sur la transformation du métier de développeur à l'ère de l'IA, incluant des études de cas, des interviews d'experts, et des recommandations stratégiques pour l'évolution de carrière.",
     author: "MOMO GODI YVAN",
     date: '2025-01-10',
-    readTime: 10,
+    readTime: 18,
     category: 'Intelligence Artificielle',
-    tags: ['IA', 'Développement', 'Futur', 'Carrière'],
-    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23fef3c7'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%23d97706' font-size='20' font-family='Arial'%3EIA et Développement%3C/text%3E%3C/svg%3E",
+    tags: ['IA', 'Développement', 'Futur', 'Carrière', 'Automatisation', 'Compétences'],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='grad3' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23f59e0b;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23d97706;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='400' fill='url(%23grad3)'/%3E%3Ctext x='400' y='180' text-anchor='middle' fill='white' font-size='26' font-weight='bold' font-family='Arial'%3EIA et Développement%3C/text%3E%3Ctext x='400' y='220' text-anchor='middle' fill='white' font-size='18' font-family='Arial'%3EAvenir du Métier%3C/text%3E%3C/svg%3E",
     featured: true,
-    views: 1100,
-    likes: 92
+    views: 2340,
+    likes: 189,
+    comments: 67,
+    pdfPath: "/articles/Intelligence Artificielle et développement _ L'IA va-t-elle remplacer les développeurs _.pdf",
+    difficulty: "Intermédiaire",
+    estimatedWords: 4100
   },
   {
     id: 4,
     title: "Transformation digitale des PME camerounaises : Guide pratique",
     slug: "transformation-digitale-pme-cameroun",
-    excerpt: "Stratégies concrètes pour accompagner les petites et moyennes entreprises camerounaises dans leur transition numérique.",
+    excerpt: "Stratégies concrètes et méthodologie éprouvée pour accompagner les petites et moyennes entreprises camerounaises dans leur transition numérique. Cas d'études réels, outils recommandés, et approche step-by-step adaptée au contexte local.",
+    fullDescription: "Un manuel pratique basé sur des expériences terrain pour guider les PME dans leur digitalisation, avec des études de cas camerounaises, des outils gratuits et accessibles, et une approche progressive.",
     author: "MOMO GODI YVAN",
     date: '2025-01-05',
-    readTime: 15,
+    readTime: 22,
     category: 'Transformation Digitale',
-    tags: ['PME', 'Cameroun', 'Digital', 'Business'],
-    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23f3e8ff'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%237c3aed' font-size='20' font-family='Arial'%3ETransformation Digitale%3C/text%3E%3C/svg%3E",
+    tags: ['PME', 'Cameroun', 'Digital', 'Business', 'Stratégie', 'Local'],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='grad4' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%238b5cf6;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%237c3aed;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='400' fill='url(%23grad4)'/%3E%3Ctext x='400' y='170' text-anchor='middle' fill='white' font-size='24' font-weight='bold' font-family='Arial'%3ETransformation%3C/text%3E%3Ctext x='400' y='200' text-anchor='middle' fill='white' font-size='24' font-weight='bold' font-family='Arial'%3EDigitale PME%3C/text%3E%3Ctext x='400' y='230' text-anchor='middle' fill='white' font-size='18' font-family='Arial'%3ECameroun%3C/text%3E%3C/svg%3E",
     featured: false,
-    views: 750,
-    likes: 58
-  }
+    views: 1450,
+    likes: 98,
+    comments: 34,
+    pdfPath: "/articles/Transformation digitale des PME camerounaises _ Guide pratique.pdf",
+    difficulty: "Débutant",
+    estimatedWords: 4800
+  },
+  {
+    id: 5,
+    title: "Cybersécurité en Afrique : Enjeux et solutions pour les entreprises locales",
+    slug: "cybersecurite-afrique-entreprises",
+    excerpt: "État des lieux de la cybersécurité sur le continent africain et recommandations spécifiques pour les entreprises locales. Analyse des menaces courantes, solutions abordables, et stratégies de protection adaptées aux ressources limitées.",
+    fullDescription: "Une étude complète sur les défis de cybersécurité en Afrique, avec des solutions pratiques et économiques pour les entreprises locales, incluant des frameworks de sécurité adaptés au contexte africain.",
+    author: "MOMO GODI YVAN",
+    date: '2024-12-28',
+    readTime: 20,
+    category: 'Cybersécurité',
+    tags: ['Cybersécurité', 'Afrique', 'Entreprises', 'Sécurité', 'Protection', 'Local'],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='grad5' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23dc2626;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23b91c1c;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='800' height='400' fill='url(%23grad5)'/%3E%3Ctext x='400' y='180' text-anchor='middle' fill='white' font-size='26' font-weight='bold' font-family='Arial'%3ECybersécurité%3C/text%3E%3Ctext x='400' y='220' text-anchor='middle' fill='white' font-size='20' font-family='Arial'%3EAfrique%3C/text%3E%3C/svg%3E",
+    featured: false,
+    views: 1120,
+    likes: 76,
+    comments: 19,
+    pdfPath: "/articles/Cybersécurité en Afrique _ Enjeux et solutions pour les entreprises locales.pdf",
+    difficulty: "Intermédiaire",
+    estimatedWords: 3800
+  },
 ];
 
-// Simple theme hook
+// Simple theme hook - using in-memory storage instead of localStorage
 const useTheme = () => {
   const [theme, setTheme] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('theme');
-      if (stored) return stored;
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    return 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   });
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
@@ -125,20 +160,71 @@ const FloatingParticles = () => {
   );
 };
 
-// Blog Post Card Component
+// Difficulty Badge Component
+const DifficultyBadge = ({ difficulty, className = "" }) => {
+  const getDifficultyColor = (level) => {
+    switch (level) {
+      case 'Débutant':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'Intermédiaire':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      case 'Avancé':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+  };
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(difficulty)} ${className}`}>
+      {difficulty}
+    </span>
+  );
+};
+
+// Enhanced Blog Post Card Component
 const BlogPostCard = ({ post, featured = false }) => {
   const { theme } = useTheme();
   const [isLiked, setIsLiked] = useState(false);
-  const navigate = useNavigate();
+  const [isSharing, setIsSharing] = useState(false);
 
   const handleReadPost = () => {
-    // For now, just show alert - you can implement full post view later
-    alert(`Lecture de l'article: ${post.title}`);
+    // Open PDF in new tab for viewing (not downloading)
+    if (post.pdfPath) {
+      window.open(post.pdfPath, '_blank', 'noopener,noreferrer');
+    } else {
+      alert(`Article "${post.title}" sera bientôt disponible en PDF.`);
+    }
   };
 
   const handleLike = (e) => {
     e.stopPropagation();
     setIsLiked(!isLiked);
+  };
+
+  const handleShare = async (e) => {
+    e.stopPropagation();
+    setIsSharing(true);
+    
+    const shareData = {
+      title: post.title,
+      text: post.excerpt,
+      url: window.location.origin + '/blog/' + post.slug
+    };
+
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(shareData.url);
+        alert('Lien copié dans le presse-papiers !');
+      }
+    } catch (error) {
+      console.log('Error sharing:', error);
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   return (
@@ -162,7 +248,7 @@ const BlogPostCard = ({ post, featured = false }) => {
         />
         
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         
         {/* Featured badge */}
         {post.featured && (
@@ -172,10 +258,13 @@ const BlogPostCard = ({ post, featured = false }) => {
           </div>
         )}
         
-        {/* Reading time */}
-        <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
-          <Clock size={14} />
-          {post.readTime} min
+        {/* Reading time and difficulty */}
+        <div className="absolute top-4 right-4 flex flex-col gap-2">
+          <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm flex items-center gap-1">
+            <Clock size={14} />
+            {post.readTime} min
+          </div>
+          <DifficultyBadge difficulty={post.difficulty} />
         </div>
         
         {/* Category */}
@@ -183,6 +272,12 @@ const BlogPostCard = ({ post, featured = false }) => {
           <span className="bg-primary-500/90 text-white px-3 py-1 rounded-full text-sm font-medium">
             {post.category}
           </span>
+        </div>
+
+        {/* PDF indicator */}
+        <div className="absolute bottom-4 right-4 bg-blue-500/90 text-white px-2 py-1 rounded-full text-xs flex items-center gap-1">
+          <FileText size={12} />
+          PDF
         </div>
       </div>
       
@@ -202,7 +297,7 @@ const BlogPostCard = ({ post, featured = false }) => {
           </div>
           <div className="flex items-center gap-1">
             <Eye size={14} />
-            <span>{post.views}</span>
+            <span>{post.views.toLocaleString()}</span>
           </div>
         </div>
         
@@ -219,10 +314,24 @@ const BlogPostCard = ({ post, featured = false }) => {
         } ${featured ? 'text-lg line-clamp-3' : 'line-clamp-2'}`}>
           {post.excerpt}
         </p>
+
+        {/* Article Stats */}
+        <div className={`flex items-center gap-4 text-sm mb-4 ${
+          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+        }`}>
+          <div className="flex items-center gap-1">
+            <MessageCircle size={14} />
+            <span>{post.comments} commentaires</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <BookOpen size={14} />
+            <span>~{post.estimatedWords} mots</span>
+          </div>
+        </div>
         
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-4">
-          {post.tags.slice(0, 3).map((tag, index) => (
+          {post.tags.slice(0, featured ? 5 : 3).map((tag, index) => (
             <span
               key={index}
               className="bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 px-2 py-1 rounded text-xs font-medium"
@@ -230,11 +339,11 @@ const BlogPostCard = ({ post, featured = false }) => {
               #{tag}
             </span>
           ))}
-          {post.tags.length > 3 && (
+          {post.tags.length > (featured ? 5 : 3) && (
             <span className={`text-xs ${
               theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
             }`}>
-              +{post.tags.length - 3} more
+              +{post.tags.length - (featured ? 5 : 3)} more
             </span>
           )}
         </div>
@@ -243,25 +352,40 @@ const BlogPostCard = ({ post, featured = false }) => {
         <div className="flex items-center justify-between">
           <button
             onClick={handleReadPost}
-            className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors"
+            className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors group/btn"
           >
-            Lire l'article
-            <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+            <ExternalLink size={16} />
+            Voir l'article PDF
+            <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
           </button>
           
           <div className="flex items-center gap-2">
             <button
               onClick={handleLike}
-              className={`p-2 rounded-full transition-colors ${
+              className={`p-2 rounded-full transition-colors flex items-center gap-1 ${
                 isLiked
                   ? 'text-red-500 bg-red-50 dark:bg-red-900/20'
                   : 'text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
               }`}
             >
               <Heart size={16} className={isLiked ? 'fill-current' : ''} />
+              <span className="text-xs">{post.likes + (isLiked ? 1 : 0)}</span>
             </button>
-            <button className="p-2 rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors">
-              <Share2 size={16} />
+            <button 
+              onClick={handleShare}
+              disabled={isSharing}
+              className="p-2 rounded-full text-gray-400 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors disabled:opacity-50"
+            >
+              {isSharing ? (
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <Sparkles size={16} />
+                </motion.div>
+              ) : (
+                <Share2 size={16} />
+              )}
             </button>
           </div>
         </div>
@@ -270,28 +394,50 @@ const BlogPostCard = ({ post, featured = false }) => {
   );
 };
 
-// Blog Filter Component
+// Enhanced Blog Filter Component
 const BlogFilter = ({ categories, selectedCategory, onCategoryChange, searchTerm, onSearchChange }) => {
   const { theme } = useTheme();
+  const [sortBy, setSortBy] = useState('date');
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 justify-between items-center mb-12">
-      {/* Search */}
-      <div className="relative flex-1 max-w-md">
-        <Search className={`absolute left-3 top-3 ${
-          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-        }`} size={20} />
-        <input
-          type="text"
-          placeholder="Rechercher des articles..."
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-colors backdrop-blur-sm ${
-            theme === 'dark' 
-              ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-400' 
-              : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
-          } focus:outline-none focus:ring-2 focus:ring-primary-500`}
-        />
+    <div className="space-y-6">
+      {/* Search and Sort */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div className="relative flex-1 max-w-md">
+          <Search className={`absolute left-3 top-3 ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`} size={20} />
+          <input
+            type="text"
+            placeholder="Rechercher des articles..."
+            value={searchTerm}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className={`w-full pl-10 pr-4 py-3 rounded-lg border transition-colors backdrop-blur-sm ${
+              theme === 'dark' 
+                ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-400' 
+                : 'bg-white/70 border-gray-300 text-gray-900 placeholder-gray-500'
+            } focus:outline-none focus:ring-2 focus:ring-primary-500`}
+          />
+        </div>
+
+        {/* Sort dropdown */}
+        <div className="flex items-center gap-2">
+          <Filter size={18} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-500'} />
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className={`px-4 py-2 rounded-lg border transition-colors backdrop-blur-sm ${
+              theme === 'dark' 
+                ? 'bg-gray-800/50 border-gray-700 text-white' 
+                : 'bg-white/70 border-gray-300 text-gray-900'
+            } focus:outline-none focus:ring-2 focus:ring-primary-500`}
+          >
+            <option value="date">Plus récents</option>
+            <option value="views">Plus vus</option>
+            <option value="likes">Plus aimés</option>
+            <option value="comments">Plus commentés</option>
+          </select>
+        </div>
       </div>
       
       {/* Category filters */}
@@ -328,13 +474,13 @@ const BlogFilter = ({ categories, selectedCategory, onCategoryChange, searchTerm
   );
 };
 
-// Newsletter Signup Component
+// Enhanced Newsletter Signup Component
 const NewsletterSignup = () => {
   const { theme } = useTheme();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setStatus('loading');
     
@@ -367,24 +513,23 @@ const NewsletterSignup = () => {
         </motion.div>
         
         <h3 className="text-2xl font-bold mb-4">
-          Restez informé
+          Restez informé des nouveaux articles
         </h3>
         <p className="mb-6 text-blue-100">
-          Recevez les derniers articles sur la technologie et l'innovation en Afrique.
+          Recevez les derniers articles sur la technologie et l'innovation en Afrique directement dans votre boîte mail.
         </p>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Votre adresse email"
-            required
             disabled={status === 'loading'}
             className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 disabled:opacity-50 backdrop-blur-sm"
           />
           <motion.button
-            type="submit"
+            onClick={handleSubmit}
             disabled={status === 'loading' || !email}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -402,11 +547,11 @@ const NewsletterSignup = () => {
             ) : (
               <>
                 <Send size={16} />
-                S'abonner
+                S'abonner à la newsletter
               </>
             )}
           </motion.button>
-        </form>
+        </div>
         
         <AnimatePresence>
           {status === 'success' && (
@@ -423,26 +568,87 @@ const NewsletterSignup = () => {
         </AnimatePresence>
         
         <p className="mt-4 text-xs text-blue-200">
-          Pas de spam, désabonnement possible à tout moment.
+          Pas de spam, désabonnement possible à tout moment. Articles en PDF haute qualité.
         </p>
       </div>
     </motion.div>
   );
 };
 
+// Enhanced Blog Stats Component
+const BlogStats = ({ posts }) => {
+  const { theme } = useTheme();
+  const totalViews = posts.reduce((sum, post) => sum + post.views, 0);
+  const totalLikes = posts.reduce((sum, post) => sum + post.likes, 0);
+  const totalComments = posts.reduce((sum, post) => sum + post.comments, 0);
+
+  const stats = [
+    { label: 'Articles publiés', value: posts.length, icon: BookOpen },
+    { label: 'Vues totales', value: totalViews.toLocaleString(), icon: Eye },
+    { label: 'Likes totaux', value: totalLikes.toLocaleString(), icon: Heart },
+    { label: 'Commentaires', value: totalComments.toLocaleString(), icon: MessageCircle }
+  ];
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {stats.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: index * 0.1 }}
+          className={`text-center p-4 rounded-lg backdrop-blur-sm ${
+            theme === 'dark' 
+              ? 'bg-gray-800/30 border border-gray-700/50' 
+              : 'bg-white/30 border border-gray-200/50'
+          }`}
+        >
+          <stat.icon size={24} className="mx-auto mb-2 text-primary-600" />
+          <div className={`text-2xl font-bold ${
+            theme === 'dark' ? 'text-white' : 'text-gray-900'
+          }`}>
+            {stat.value}
+          </div>
+          <div className={`text-sm ${
+            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>
+            {stat.label}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
 // Main Blog Component
 const BlogPage = () => {
+  
   const [posts] = useState(blogPosts);
   const [filteredPosts, setFilteredPosts] = useState(blogPosts);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const { theme, toggleTheme } = useTheme();
   const { scrollYProgress } = useScroll();
   const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
 
   const categories = [...new Set(posts.map(post => post.category))];
+  
+
+  // Check online status
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Filter posts
   useEffect(() => {
@@ -456,6 +662,7 @@ const BlogPage = () => {
       filtered = filtered.filter(post =>
         post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        post.fullDescription.toLowerCase().includes(searchTerm.toLowerCase()) ||
         post.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
@@ -469,8 +676,13 @@ const BlogPage = () => {
     transition: { duration: 0.6, ease: "easeOut" }
   };
 
-  const featuredPost = filteredPosts.find(post => post.featured);
+  const featuredPosts = filteredPosts.filter(post => post.featured);
   const regularPosts = filteredPosts.filter(post => !post.featured);
+
+  const handleReturnToPortfolio = () => {
+    // In a real app, this would navigate to the portfolio page
+    alert('Retour au portfolio - Cette fonctionnalité nécessite React Router dans votre application');
+  };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${
@@ -500,9 +712,10 @@ const BlogPage = () => {
               animate={{ opacity: 1, x: 0 }}
               className="flex items-center space-x-4"
             >
-              <Link to="/" className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
+              <button  onClick={() => navigate("/")}
+               className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-accent-600 bg-clip-text text-transparent">
                 MOMO YVAN
-              </Link>
+              </button>
               <div className="flex items-center space-x-2">
                 <button
                   onClick={toggleTheme}
@@ -515,22 +728,28 @@ const BlogPage = () => {
                   {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
                 <div className="flex items-center gap-1">
-                  <Wifi size={16} className="text-green-500" />
+                  {isOnline ? (
+                    <Wifi size={16} className="text-green-500" />
+                  ) : (
+                    <WifiOff size={16} className="text-red-500" />
+                  )}
                 </div>
               </div>
             </motion.div>
             
-            <Link
-              to="/"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                theme === 'dark' 
-                  ? 'bg-gray-800 text-gray-300 hover:text-primary-400' 
-                  : 'bg-gray-100 text-gray-600 hover:text-primary-600'
-              }`}
-            >
-              <ArrowLeft size={18} />
-              Retour au Portfolio
-            </Link>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate("/")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  theme === 'dark' 
+                    ? 'bg-gray-800 text-gray-300 hover:text-primary-400' 
+                    : 'bg-gray-100 text-gray-600 hover:text-primary-600'
+                }`}
+              >
+                <ArrowLeft size={18} />
+                Retour au Portfolio
+              </button>
+            </div>
           </div>
         </div>
       </nav>
@@ -562,7 +781,7 @@ const BlogPage = () => {
               {...fadeInUp}
               className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary-600 via-accent-600 to-purple-600 bg-clip-text text-transparent"
             >
-              Blog & Articles
+              Blog Technique & Innovation
             </motion.h1>
 
             <motion.p 
@@ -572,7 +791,7 @@ const BlogPage = () => {
                 theme === 'dark' ? 'text-gray-300' : 'text-gray-600'
               }`}
             >
-              Mes réflexions sur la technologie et l'innovation
+              Articles PDF détaillés sur la technologie et l'innovation en Afrique
             </motion.p>
 
             <motion.p 
@@ -582,24 +801,16 @@ const BlogPage = () => {
                 theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
               }`}
             >
-              Découvrez mes articles sur le développement, la transformation digitale et l'écosystème tech africain.
+              Découvrez mes analyses approfondies, guides pratiques et réflexions sur l'écosystème tech africain.
+              Tous les articles sont disponibles en format PDF haute qualité.
             </motion.p>
 
+            {/* Blog Stats */}
             <motion.div 
               {...fadeInUp}
               transition={{ delay: 0.4 }}
-              className={`flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-8 ${
-                theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-              }`}
             >
-              <div className="flex items-center gap-2">
-                <BookOpen size={16} />
-                <span className="text-sm">{posts.length} Articles publiés</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Tag size={16} />
-                <span className="text-sm">{categories.length} Catégories</span>
-              </div>
+              <BlogStats posts={posts} />
             </motion.div>
           </div>
         </div>
@@ -644,18 +855,27 @@ const BlogPage = () => {
                 <p className={`${
                   theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
                 }`}>
-                  Essayez de modifier vos filtres de recherche
+                  Essayez de modifier vos filtres de recherche ou explorez d'autres catégories
                 </p>
               </motion.div>
             ) : (
               <>
-                {/* Featured Post */}
-                {featuredPost && (
+                {/* Featured Posts */}
+                {featuredPosts.length > 0 && (
                   <motion.div
                     {...fadeInUp}
                     className="mb-16"
                   >
-                    <BlogPostCard post={featuredPost} featured={true} />
+                    <h2 className={`text-3xl font-bold mb-8 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Articles en vedette
+                    </h2>
+                    <div className="grid gap-8">
+                      {featuredPosts.map((post) => (
+                        <BlogPostCard key={post.id} post={post} featured={true} />
+                      ))}
+                    </div>
                   </motion.div>
                 )}
 
@@ -664,11 +884,18 @@ const BlogPage = () => {
                   <motion.div
                     {...fadeInUp}
                     transition={{ delay: 0.2 }}
-                    className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16"
+                    className="mb-16"
                   >
-                    {regularPosts.map((post) => (
-                      <BlogPostCard key={post.id} post={post} />
-                    ))}
+                    <h2 className={`text-3xl font-bold mb-8 ${
+                      theme === 'dark' ? 'text-white' : 'text-gray-900'
+                    }`}>
+                      Tous les articles
+                    </h2>
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {regularPosts.map((post) => (
+                        <BlogPostCard key={post.id} post={post} />
+                      ))}
+                    </div>
                   </motion.div>
                 )}
 
