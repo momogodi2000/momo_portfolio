@@ -1,0 +1,123 @@
+#!/bin/bash
+
+# 🚀 MOMO YVAN Portfolio - Quick Deployment Script
+# Run this script to prepare and deploy your portfolio
+
+echo "🎯 MOMO YVAN Portfolio Deployment Script"
+echo "========================================"
+
+# Check if we're in a git repository
+if [ ! -d ".git" ]; then
+    echo "❌ Not a git repository. Please run 'git init' first."
+    exit 1
+fi
+
+# 1. Install dependencies
+echo "📦 Installing dependencies..."
+npm install
+
+# 2. Create necessary files
+echo "📄 Creating deployment files..."
+
+# Create vercel.json
+cat > vercel.json << 'EOF'
+{
+  "version": 2,
+  "name": "momo-yvan-portfolio",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/static/(.*)",
+      "headers": {
+        "cache-control": "s-maxage=31536000,immutable"
+      }
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
+EOF
+
+# Create _redirects for SPA routing
+mkdir -p public
+cat > public/_redirects << 'EOF'
+/*    /index.html   200
+EOF
+
+# Create robots.txt
+cat > public/robots.txt << 'EOF'
+User-agent: *
+Allow: /
+
+Sitemap: https://momoyvan-portfolio.vercel.app/sitemap.xml
+EOF
+
+# Create .env.production
+cat > .env.production << 'EOF'
+REACT_APP_ENVIRONMENT=production
+REACT_APP_SITE_URL=https://momoyvan-portfolio.vercel.app
+EOF
+
+# 3. Update package.json with deployment scripts
+echo "🔧 Adding deployment scripts to package.json..."
+npm pkg set scripts.deploy:vercel="vercel --prod"
+npm pkg set scripts.deploy:preview="vercel"
+npm pkg set scripts.build:analyze="npm run build && npx serve -s build"
+
+# 4. Test build
+echo "🏗️ Testing build..."
+npm run build
+
+if [ $? -eq 0 ]; then
+    echo "✅ Build successful!"
+else
+    echo "❌ Build failed! Please fix errors before deploying."
+    exit 1
+fi
+
+# 5. Git commit (if changes exist)
+echo "📝 Committing changes..."
+git add .
+git commit -m "🚀 Prepare for deployment - Add deployment configs" || echo "No changes to commit"
+
+echo ""
+echo "🎉 Ready for deployment!"
+echo ""
+echo "📋 Next steps:"
+echo "==============="
+echo ""
+echo "🔵 OPTION 1: Deploy to Vercel (Recommended)"
+echo "   1. Install Vercel CLI: npm install -g vercel"
+echo "   2. Login: vercel login"
+echo "   3. Deploy: vercel"
+echo "   4. For production: vercel --prod"
+echo ""
+echo "🔴 OPTION 2: Deploy to Render"
+echo "   1. Push to GitHub: git push origin main"
+echo "   2. Go to https://render.com"
+echo "   3. Create New Static Site"
+echo "   4. Connect your GitHub repo"
+echo "   5. Build Command: npm run build"
+echo "   6. Publish Directory: build"
+echo ""
+echo "🌐 OPTION 3: Deploy to Netlify"
+echo "   1. Go to https://netlify.com"
+echo "   2. Drag and drop your 'build' folder"
+echo "   3. Or connect GitHub repo"
+echo ""
+echo "💡 Tips:"
+echo "   - Your site will be available at: https://your-app-name.vercel.app"
+echo "   - You can add a custom domain later"
+echo "   - Enable analytics by adding REACT_APP_GOOGLE_ANALYTICS_ID"
+echo ""
+echo "🎯 Your portfolio is ready to go live!"
