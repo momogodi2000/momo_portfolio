@@ -6,35 +6,45 @@ export const personalInfo = {
   location: "Yaoundé VI, Biyemassi, Maison Blanche, Cameroun",
   email: "yvangodimomo@gmail.com",
   phone: "(+237) 695 922 065",
+  whatsapp: "+237695922065",
   portfolio: "https://momoyvan-porfoloi.onrender.com",
   linkedin: "https://linkedin.com/in/momo-godi-yvan-206642244",
   website: "https://www.protegeqv.org",
-  github: "https://github.com/momoyvan", // Add your GitHub if available
+  github: "https://github.com/momogodi2000?tab=repositories",
+  instagram: "https://instagram.com/momoyvan",
+  twitter: "https://twitter.com/momoyvan",
+  youtube: "https://youtube.com/@momoyvan",
+  resume: "../assets/MOMO_GODI_YVAN_CV.pdf",
   bio: "Ingénieur en génie logiciel diplômé de l'IAI Cameroun, parfaitement bilingue (français/anglais), spécialisé en développement web et mobile. Expert en transformation digitale avec une expérience confirmée dans la digitalisation d'organisations communautaires et la formation numérique."
 };
 
 export const skills = {
   programming: [
-    { name: "Python", level: 90, icon: "🐍", category: "Backend" },
-    { name: "JavaScript", level: 85, icon: "📜", category: "Frontend" },
-    { name: "PHP", level: 80, icon: "🌐", category: "Backend" },
-    { name: "Dart", level: 75, icon: "🎯", category: "Mobile" }
+    { name: "Python", level: 80, icon: "🐍", category: "Backend", years: 2 },
+    { name: "JavaScript", level: 68, icon: "📜", category: "Frontend", years: 1 },
+    { name: "PHP", level: 72, icon: "🌐", category: "Backend", years: 2 },
+    { name: "Dart", level: 78, icon: "🎯", category: "Mobile", years: 1 }
   ],
   frameworks: [
-    { name: "React.js", level: 85, icon: "⚛️", category: "Frontend" },
-    { name: "Laravel", level: 80, icon: "🏗️", category: "Backend" },
-    { name: "Django", level: 85, icon: "🎸", category: "Backend" },
-    { name: "Flutter", level: 75, icon: "📱", category: "Mobile" },
-    { name: "Flask", level: 70, icon: "🌶️", category: "Backend" }
+    { name: "React.js", level: 90, icon: "⚛️", category: "Frontend", years: 1 },
+    { name: "Django", level: 88, icon: "🎸", category: "Backend", years: 2 },
+    { name: "Laravel", level: 85, icon: "🏗️", category: "Backend", years: 2 },
+    { name: "Flutter", level: 80, icon: "📱", category: "Mobile", years: 1 },
+    { name: "Flask", level: 75, icon: "🌶️", category: "Backend", years: 2 }
   ],
   databases: [
-    { name: "MySQL", level: 80, icon: "🗄️", category: "Database" },
-    { name: "PostgreSQL", level: 75, icon: "🐘", category: "Database" },
-    { name: "SQLite", level: 70, icon: "💾", category: "Database" }
+    { name: "PostgreSQL", level: 85, icon: "🐘", category: "Database", years: 2 },
+    { name: "MySQL", level: 88, icon: "🗄️", category: "Database", years: 3 },
+    { name: "MongoDB", level: 80, icon: "🍃", category: "Database", years: 1 },
+    { name: "Redis", level: 75, icon: "🔴", category: "Cache", years: 1 },
+    { name: "SQLite", level: 82, icon: "💾", category: "Database", years: 3 }
   ],
   tools: [
-    { name: "Git/GitHub", level: 85, icon: "🔧", category: "Version Control" },
-    { name: "Docker", level: 70, icon: "🐳", category: "DevOps" },
+    { name: "Git/GitHub", level: 90, icon: "🔧", category: "Version Control", years: 4 },
+    { name: "Docker", level: 78, icon: "🐳", category: "DevOps", years: 2 },
+    { name: "Linux", level: 85, icon: "🐧", category: "System", years: 3 },
+    { name: "Figma", level: 80, icon: "🎨", category: "Design", years: 2 },
+    { name: "Postman", level: 88, icon: "📮", category: "API", years: 3 },
     { name: "UML/Merise", level: 80, icon: "📊", category: "Design" },
     { name: "Agile/Scrum", level: 75, icon: "🏃", category: "Methodology" }
   ]
@@ -119,26 +129,149 @@ export const projects = [
     id: 1,
     title: "EAT FAST",
     description: "Application de livraison de nourriture 100% Camerounaise adaptée au marché local",
-    longDescription: "Plateforme complète de livraison de repas conçue spécifiquement pour le marché camerounais, intégrant les solutions de paiement mobile money et la géolocalisation adaptée aux villes camerounaises.",
+    longDescription: "Plateforme complète de livraison de repas conçue spécifiquement pour le marché camerounais, intégrant les solutions de paiement mobile money et la géolocalisation adaptée aux réalités locales.",
     period: "Avril 2025 - Présent",
     status: "En développement",
-    progress: 65,
-    tech: ["React.js", "Django REST", "PostgreSQL", "React Native"],
+    progress: 75,
+    tech: ["React.js", "Django REST", "PostgreSQL", "React Native", "Mobile Money API", "Redis"],
     features: [
       "Géolocalisation intégrée adaptée aux villes camerounaises",
       "Paiement mobile money (Orange Money, MTN MoMo)",
       "Interface multilingue (français/anglais)",
-      "Gestion intelligente des stocks restaurants",
-      "Système de recommandations personnalisées",
-      "Support client temps réel"
+      "Notifications push en temps réel",
+      "Système de tracking de commandes intelligent",
+      "Dashboard analytics pour restaurants",
+      "Mode hors ligne pour zones à faible connectivité",
+      "Optimisation pour les connexions 2G/3G"
     ],
-    category: "Web & Mobile App",
+    category: "Mobile App",
     type: "Personal Project",
-    url: null,
-    image: "/api/placeholder/400/300"
+    url: "https://eat-fast-demo.vercel.app",
+    github: "https://github.com/momoyvan/eat-fast",
+    image: "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f0f9ff'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%230284c7' font-size='24' font-family='Arial'%3EEAT FAST - App Screenshot%3C/text%3E%3C/svg%3E",
+    highlights: [
+      "Interface optimisée pour le marché africain",
+      "Intégration native des systèmes de paiement locaux",
+      "Performance adaptée aux connexions limitées"
+    ]
   },
   {
     id: 2,
+    title: "BueaDelights E-commerce",
+    description: "Django-based e-commerce for Cameroonian food business",
+    longDescription: "A comprehensive Django-based e-commerce web application for a local Cameroonian food business in Buea, Southwest Region. The platform serves authentic Cameroonian cuisine with modern web technologies, mobile-first design, and integrated payment solutions.",
+    period: "2024",
+    status: "Terminé",
+    progress: 100,
+    tech: ["Django", "Python", "PostgreSQL", "Mobile Money API", "Bootstrap"],
+    features: [
+      "Product showcase with categories",
+      "Shopping cart system",
+      "Reservation system",
+      "Local payment integration (Mobile Money)",
+      "Customer accounts with order history",
+      "Simplified admin interface"
+    ],
+    category: "E-commerce",
+    type: "Business Project",
+    url: null,
+    github: "https://github.com/momogodi2000/bueabelight.git",
+    image: "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f8fafc'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%230369a1' font-size='24' font-family='Arial'%3EBueaDelights E-commerce%3C/text%3E%3C/svg%3E"
+  },
+  {
+    id: 3,
+    title: "Kori Mobile App",
+    description: "Cultural preservation and education platform",
+    longDescription: "A cultural and educational mobile application that preserves and promotes local language, culture, and traditions. The app follows MVVM architecture and includes features like dictionary management, arts library, events calendar, thematic forums, and educational games.",
+    period: "2024",
+    status: "En cours",
+    progress: 80,
+    tech: ["Flutter", "Dart", "Django", "MVVM Architecture", "Firebase"],
+    features: [
+      "Interactive dictionary with audio pronunciations",
+      "Cultural media library",
+      "Events calendar with notifications",
+      "Thematic discussion forums",
+      "Educational games (6 types)",
+      "User management system"
+    ],
+    category: "Mobile Application",
+    type: "Educational Project",
+    url: null,
+    github: null,
+    image: "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23ecfdf5'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%23059669' font-size='24' font-family='Arial'%3EKori Mobile App%3C/text%3E%3C/svg%3E"
+  },
+  {
+    id: 4,
+    title: "MentorCam Platform",
+    description: "Professional-amateur connection platform",
+    longDescription: "An innovative platform that connects amateurs and professionals for mentorship, training, and events. The platform is tailored to the socio-economic realities of Cameroon with features like intelligent search, mentorship sessions, local payment integration, and event management.",
+    period: "2024",
+    status: "Production",
+    progress: 100,
+    tech: ["Django", "React.js", "PostgreSQL", "Twilio/Jitsi", "Mobile Money API"],
+    features: [
+      "User management with local authentication",
+      "AI-powered search with voice support",
+      "Mentorship session booking",
+      "Local event management",
+      "Mobile Money payment integration",
+      "Multilingual support (French/English)"
+    ],
+    category: "Web Platform",
+    type: "Professional Project",
+    url: null,
+    github: "https://github.com/momogodi2000/mentorcam_front.git",
+    image: "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23fef3c7'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%23d97706' font-size='24' font-family='Arial'%3EMentorCam Platform%3C/text%3E%3C/svg%3E"
+  },
+  {
+    id: 5,
+    title: "E-Railway Passenger Dashboard",
+    description: "Train travel management system",
+    longDescription: "A web application designed for users to manage their train travel experiences with ease. It provides features for booking tickets, checking train schedules, and accessing customer support, along with various statistics and promotions.",
+    period: "2024",
+    status: "Terminé",
+    progress: 100,
+    tech: ["Django", "Bootstrap", "jQuery", "Chart.js", "Google Maps API"],
+    features: [
+      "User-friendly dashboard interface",
+      "Travel statistics visualization",
+      "Ticket booking system",
+      "Real-time train schedules",
+      "Customer support access",
+      "Google Maps integration"
+    ],
+    category: "Web Application",
+    type: "Transportation Project",
+    url: null,
+    github: "https://github.com/momogodi2000/E-railway.git",
+    image: "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23f3e8ff'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%237c3aed' font-size='24' font-family='Arial'%3EE-Railway Dashboard%3C/text%3E%3C/svg%3E"
+  },
+  {
+    id: 6,
+    title: "Food Recipe Web App",
+    description: "Django-based recipe sharing platform",
+    longDescription: "A Django-based web application designed to help users discover and share food recipes. The app allows users to create accounts, submit their own recipes, and browse through a collection of recipes submitted by others.",
+    period: "2024",
+    status: "Terminé",
+    progress: 100,
+    tech: ["Django", "Python", "SQLite", "Bootstrap"],
+    features: [
+      "User account creation",
+      "Recipe submission and management",
+      "Recipe browsing and searching",
+      "Category organization",
+      "User interaction features",
+      "Responsive design"
+    ],
+    category: "Web Application",
+    type: "Personal Project",
+    url: null,
+    github: "https://github.com/momogodi2000/food-recipe-web-app.git",
+    image: "data:image/svg+xml,%3Csvg width='800' height='600' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='600' fill='%23ffe4e6'/%3E%3Ctext x='400' y='300' text-anchor='middle' fill='%23be123c' font-size='24' font-family='Arial'%3EFood Recipe App%3C/text%3E%3C/svg%3E"
+  },
+  {
+    id: 7,
     title: "Portfolio Professionnel Django",
     description: "Site web responsive moderne présentant compétences et réalisations",
     longDescription: "Portfolio personnel développé avec Django, présentant mes compétences techniques, projets et expériences professionnelles avec une interface moderne et responsive.",
@@ -157,54 +290,11 @@ export const projects = [
     category: "Web Application",
     type: "Personal Project",
     url: "https://momoyvan-porfoloi.onrender.com",
+    github: null,
     image: "/api/placeholder/400/300"
   },
   {
-    id: 3,
-    title: "Application de Gestion de Tâches",
-    description: "Interface intuitive pour la gestion de projets personnels et professionnels",
-    longDescription: "Application web complète de gestion de tâches et projets avec fonctionnalités avancées de planification, suivi et collaboration.",
-    period: "2023",
-    status: "Terminé",
-    progress: 100,
-    tech: ["Python", "Flask", "SQLite", "Bootstrap", "JavaScript"],
-    features: [
-      "Planification d'objectifs SMART",
-      "Suivi de progression en temps réel",
-      "Interface utilisateur intuitive et responsive",
-      "Gestion de projets collaboratifs",
-      "Notifications et rappels automatiques",
-      "Rapports et analytics"
-    ],
-    category: "Web Application",
-    type: "Personal Project",
-    url: null,
-    image: "/api/placeholder/400/300"
-  },
-  {
-    id: 4,
-    title: "Marketplace de Services",
-    description: "Plateforme e-commerce complète avec gestion multi-utilisateurs",
-    longDescription: "Marketplace moderne permettant aux prestataires de services de proposer leurs services avec un système complet de réservations et paiements sécurisés.",
-    period: "2023",
-    status: "Terminé",
-    progress: 100,
-    tech: ["PHP", "MySQL", "JavaScript", "Bootstrap", "PayPal API"],
-    features: [
-      "Système de réservations en temps réel",
-      "Paiements sécurisés multi-devises",
-      "Architecture modulaire et extensible",
-      "Gestion avancée des profils utilisateurs",
-      "Système de reviews et ratings",
-      "Tableau de bord analytics"
-    ],
-    category: "E-commerce Platform",
-    type: "Commercial Project",
-    url: null,
-    image: "/api/placeholder/400/300"
-  },
-  {
-    id: 5,
+    id: 8,
     title: "Plateforme de Prise de Rendez-vous CNI",
     description: "Application gouvernementale pour la gestion des rendez-vous Carte Nationale d'Identité",
     longDescription: "Système développé pour le gouvernement camerounais permettant aux citoyens de prendre rendez-vous en ligne pour leurs démarches administratives.",
@@ -223,7 +313,53 @@ export const projects = [
     category: "Government Platform",
     type: "Professional Project",
     url: null,
+    github: null,
     image: "/api/placeholder/400/300"
+  }
+];
+
+export const blogPosts = [
+  {
+    id: 1,
+    title: "Guide Complet du Développement Web Moderne au Cameroun",
+    slug: "guide-developpement-web-moderne-cameroun",
+    excerpt: "Découvrez les meilleures pratiques et technologies pour le développement web adapté au contexte camerounais.",
+    author: "MOMO GODI YVAN",
+    date: "2025-01-15",
+    readTime: 8,
+    tags: ["Web Development", "Cameroun", "React", "Django"],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23dbeafe'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%231d4ed8' font-size='20' font-family='Arial'%3EGuide Développement Web%3C/text%3E%3C/svg%3E",
+    featured: true,
+    views: 1250,
+    likes: 89
+  },
+  {
+    id: 2,
+    title: "L'IA et le Développement : Révolution ou Evolution ?",
+    slug: "ia-developpement-revolution-evolution",
+    excerpt: "Analyse de l'impact de l'intelligence artificielle sur le métier de développeur en Afrique.",
+    author: "MOMO GODI YVAN",
+    date: "2025-01-10",
+    readTime: 6,
+    tags: ["IA", "Développement", "Afrique", "Innovation"],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23dcfce7'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%23166534' font-size='20' font-family='Arial'%3EIA et Développement%3C/text%3E%3C/svg%3E",
+    featured: false,
+    views: 890,
+    likes: 67
+  },
+  {
+    id: 3,
+    title: "Transformation Digitale des PME Camerounaises",
+    slug: "transformation-digitale-pme-camerounaises",
+    excerpt: "Stratégies pratiques pour digitaliser les petites et moyennes entreprises au Cameroun.",
+    author: "MOMO GODI YVAN",
+    date: "2025-01-05",
+    readTime: 10,
+    tags: ["Transformation Digitale", "PME", "Cameroun", "Business"],
+    image: "data:image/svg+xml,%3Csvg width='800' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='800' height='400' fill='%23fef3c7'/%3E%3Ctext x='400' y='200' text-anchor='middle' fill='%23d97706' font-size='20' font-family='Arial'%3ETransformation Digitale%3C/text%3E%3C/svg%3E",
+    featured: true,
+    views: 1100,
+    likes: 92
   }
 ];
 
@@ -353,7 +489,7 @@ export const socialLinks = [
   },
   {
     name: "GitHub",
-    url: "https://github.com/momoyvan",
+    url: "https://github.com/momogodi2000?tab=repositories",
     icon: "github"
   },
   {
@@ -365,5 +501,20 @@ export const socialLinks = [
     name: "Email",
     url: "mailto:yvangodimomo@gmail.com",
     icon: "mail"
+  },
+  {
+    name: "Instagram",
+    url: "https://instagram.com/momoyvan",
+    icon: "instagram"
+  },
+  {
+    name: "Twitter",
+    url: "https://twitter.com/momoyvan",
+    icon: "twitter"
+  },
+  {
+    name: "YouTube",
+    url: "https://youtube.com/@momoyvan",
+    icon: "youtube"
   }
 ];
