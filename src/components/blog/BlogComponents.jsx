@@ -8,6 +8,8 @@ import {
   FileText, Download, ExternalLink, TrendingUp, MessageCircle,
   Users, Award, Globe
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+
 
 // Enhanced blog posts data with local PDF links
 const blogPosts = [
@@ -634,7 +636,8 @@ const BlogPage = () => {
   const backgroundY = useTransform(scrollYProgress, [0, 1], ['0%', '50%']);
 
   const categories = [...new Set(posts.map(post => post.category))];
-  
+  const navigate = useNavigate();
+
 
   // Check online status
   useEffect(() => {
