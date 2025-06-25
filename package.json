@@ -1,105 +1,74 @@
 {
   "name": "momo-yvan-portfolio-enhanced",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.1.0",
   "type": "module",
-  "description": "Portfolio professionnel avancé de MOMO GODI YVAN avec blog, galerie et fonctionnalités interactives",
+  "description": "Professional portfolio of MOMO GODI YVAN featuring 3D animations, blog, and interactive gallery",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "deploy": "npm run build && gh-pages -d dist",
-    "analyze": "npm run build && npx vite-bundle-analyzer dist/assets/*.js"
+    "deploy:vercel": "vercel --prod",
+    "analyze": "npm run build && npx vite-bundle-analyzer dist/assets/*.js",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write .",
+    "test": "vitest",
+    "postinstall": "patch-package"
   },
   "keywords": [
     "portfolio",
     "react",
-    "vite",
-    "tailwindcss",
-    "framer-motion",
-    "software-engineer",
-    "web-developer",
-    "mobile-developer",
-    "digital-transformation",
-    "cameroon",
+    "threejs",
+    "interactive",
+    "developer",
     "africa",
-    "blog",
-    "gallery",
-    "dark-mode",
-    "multilingual",
-    "3d-animations"
+    "pwa"
   ],
   "author": {
     "name": "MOMO GODI YVAN",
     "email": "yvangodimomo@gmail.com",
-    "url": "https://momoyvan-porfoloi.onrender.com"
+    "url": "https://momoyvan.dev"
   },
   "license": "MIT",
   "dependencies": {
-    "@react-three/drei": "^9.88.13",
-    "@react-three/fiber": "^8.15.11",
-    "aos": "^2.3.4",
-    "clipboard": "^2.0.11",
-    "country-flag-icons": "^1.5.7",
-    "framer-motion": "^10.18.0",
-    "gsap": "^3.12.2",
-    "howler": "^2.2.4",
-    "lottie-react": "^2.4.0",
-    "lucide-react": "^0.295.0",
-    "particles.js": "^2.0.0",
-    "photoswipe": "^5.4.3",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-ga4": "^2.1.0",
-    "react-helmet-async": "^1.3.0",
-    "react-hotjar": "^6.1.0",
-    "react-image-gallery": "^1.3.0",
-    "react-intersection-observer": "^9.16.0",
-    "react-lazyload": "^3.2.0",
-    "react-markdown": "^9.0.1",
-    "react-responsive": "^9.0.2",
-    "react-router-dom": "^6.20.1",
-    "react-share": "^4.4.1",
-    "react-syntax-highlighter": "^15.5.0",
-    "react-window": "^1.8.8",
-    "swiper": "^11.0.5",
-    "three": "^0.158.0",
-    "typed.js": "^2.1.0",
-    "web-vitals": "^5.0.3"
+    "@react-three/drei": "^10.0.0",
+    "@react-three/fiber": "^8.16.0",
+    "@react-three/postprocessing": "^2.8.0",
+    "framer-motion": "^11.0.0",
+    "gsap": "^3.12.5",
+    "lucide-react": "^0.300.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.21.0",
+    "three": "^0.160.0",
+    "vite-plugin-pwa": "^0.17.5",
+    "workbox-window": "^7.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/aspect-ratio": "^0.4.2",
-    "@tailwindcss/forms": "^0.5.7",
-    "@tailwindcss/line-clamp": "^0.4.4",
-    "@tailwindcss/typography": "^0.5.10",
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
-    "@vitejs/plugin-react": "^4.2.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/three": "^0.160.0",
+    "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.55.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "gh-pages": "^6.1.0",
+    "patch-package": "^7.0.0",
     "postcss": "^8.4.32",
     "prettier": "^3.1.1",
-    "prettier-plugin-tailwindcss": "^0.5.9",
     "tailwindcss": "^3.3.6",
-    "vite": "^5.0.8",
-    "vite-bundle-analyzer": "^0.7.0",
-    "vite-plugin-pwa": "^0.17.4",
-    "workbox-webpack-plugin": "^7.0.0"
+    "typescript": "^5.3.0",
+    "vite": "^5.0.0",
+    "vite-plugin-compression": "^0.5.1",
+    "vitest": "^1.0.0"
   },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/momoyvan/enhanced-portfolio.git"
-  },
-  "homepage": "https://momoyvan.github.io/enhanced-portfolio",
   "browserslist": {
     "production": [
       ">0.2%",
@@ -112,8 +81,8 @@
       "last 1 safari version"
     ]
   },
-  "overrides": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+  "volta": {
+    "node": "18.18.2",
+    "npm": "9.8.1"
   }
 }
