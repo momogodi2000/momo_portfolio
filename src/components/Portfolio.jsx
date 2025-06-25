@@ -1047,7 +1047,7 @@ const EnhancedPortfolio = () => {
                 {t.hero.cta2}
               </motion.button>
             <motion.button 
-                onClick={() => window.open('public/CV.pdf', '_blank')}
+                onClick={() => window.open('public/CV.pdf','_blank', 'noopener,noreferrer')}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 className={`bg-gray-600 hover:bg-gray-700 text-white px-8 py-4 rounded-lg font-medium transition-all duration-200 flex items-center gap-2`}
