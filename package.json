@@ -14,7 +14,8 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "format": "prettier --write .",
     "test": "vitest",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "clean": "rm -rf node_modules package-lock.json"
   },
   "keywords": [
     "portfolio",
@@ -33,8 +34,8 @@
   "license": "MIT",
   "dependencies": {
     "@react-three/drei": "^10.0.0",
-    "@react-three/fiber": "^8.16.0",
-    "@react-three/postprocessing": "^2.8.0",
+    "@react-three/fiber": "^9.0.0",
+    "@react-three/postprocessing": "^2.19.1",
     "framer-motion": "^11.0.0",
     "gsap": "^3.12.5",
     "lucide-react": "^0.300.0",
@@ -84,5 +85,15 @@
   "volta": {
     "node": "18.18.2",
     "npm": "9.8.1"
+  },
+  "overrides": {
+    "@react-three/postprocessing": {
+      "@react-three/fiber": "^9.0.0"
+    }
+  },
+  "pnpm": {
+    "overrides": {
+      "@react-three/fiber": "^9.0.0"
+    }
   }
 }
